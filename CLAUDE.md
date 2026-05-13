@@ -4,7 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Single-page static site (`index.html` + `dog.jpeg`) deployed to Cloudflare Workers via Wrangler. The whole repo root is served as static assets — there is no build step, no framework, and no server-side code. `wrangler.jsonc` sets `assets.directory` to `.`, so any file added to the root is publicly served.
+Single-page static site deployed to Cloudflare Workers via Wrangler. No build step, no framework, no server-side code. `wrangler.jsonc` sets `assets.directory` to `./public`, so everything under `public/` is publicly served and everything outside it (this file, `wrangler.jsonc`, `README.md`) is project-only.
+
+## Layout
+
+```
+public/
+  index.html        # single self-contained page; inline CSS, loads Google Fonts
+  images/           # dog-N.jpeg, referenced as images/dog-N.jpeg
+wrangler.jsonc
+```
+
+Add new images as `public/images/<name>.jpeg` and reference them with a relative path from `index.html` (`images/<name>.jpeg`).
 
 ## Commands
 
