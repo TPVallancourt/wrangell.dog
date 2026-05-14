@@ -117,7 +117,13 @@
       row-gap: 112px;
     }
 
-    .plate { position: relative; animation: rise 1.0s ease-out both; }
+    .plate {
+      position: relative;
+      animation: rise 1.0s ease-out both;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .plate:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; }
     .plate-1 { grid-column: 1 / span 8; animation-delay: 0.42s; }
     .plate-2 { grid-column: 6 / span 7; animation-delay: 0.56s; }
     .plate-3 { grid-column: 2 / span 10; animation-delay: 0.70s; }
@@ -198,6 +204,33 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
+    /* ---------- Pet counter ---------- */
+    #pet-count { font-variant-numeric: tabular-nums; display: inline-block; }
+    #pet-count.bump { animation: bump 0.45s ease-out; }
+    @keyframes bump {
+      0%   { transform: translateY(0); color: inherit; }
+      40%  { transform: translateY(-3px); color: var(--accent); }
+      100% { transform: translateY(0); color: inherit; }
+    }
+
+    .pet-float {
+      position: absolute;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      animation: petFloat 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+      z-index: 5;
+      text-shadow: 0 1px 6px rgba(236, 228, 207, 0.85);
+    }
+    @keyframes petFloat {
+      from { opacity: 1; transform: translate(-50%, -50%) scale(0.9); }
+      to   { opacity: 0; transform: translate(-50%, calc(-50% - 48px)) scale(1.05); }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation: none !important; transition: none !important; }
     }
@@ -228,11 +261,11 @@
     <div class="section-label">
       <span>Plates I&ndash;III</span>
       <span class="line"></span>
-      <span>Three views</span>
+      <span><span id="pet-count">&mdash;</span> pets given</span>
     </div>
 
     <main>
-      <figure class="plate plate-1">
+      <figure class="plate plate-1" role="button" tabindex="0" aria-label="Pet Wrangell">
         <div class="frame"><img src="images/dog-1.jpeg" alt="Wrangell, plate one"></div>
         <figcaption>
           <span class="plate-num">Plate №01</span>
@@ -240,7 +273,7 @@
         </figcaption>
       </figure>
 
-      <figure class="plate plate-2">
+      <figure class="plate plate-2" role="button" tabindex="0" aria-label="Pet Wrangell">
         <div class="frame"><img src="images/dog-2.jpeg" alt="Wrangell, plate two"></div>
         <figcaption>
           <span class="plate-num">Plate №02</span>
@@ -248,7 +281,7 @@
         </figcaption>
       </figure>
 
-      <figure class="plate plate-3">
+      <figure class="plate plate-3" role="button" tabindex="0" aria-label="Pet Wrangell">
         <div class="frame"><img src="images/dog-3.jpeg" alt="Wrangell, plate three"></div>
         <figcaption>
           <span class="plate-num">Plate №03</span>
@@ -263,5 +296,68 @@
       <span><span class="ornament">❦</span>For the record</span>
     </footer>
   </div>
+
+  <script>
+    (() => {
+      const counterEl = document.getElementById('pet-count');
+      const fmt = (n) => n.toLocaleString('en-US');
+
+      function setCount(n) {
+        counterEl.textContent = fmt(n);
+      }
+
+      function bump() {
+        counterEl.classList.remove('bump');
+        void counterEl.offsetWidth;
+        counterEl.classList.add('bump');
+      }
+
+      function spawnFloat(plate, clientX, clientY) {
+        const rect = plate.getBoundingClientRect();
+        const el = document.createElement('span');
+        el.className = 'pet-float';
+        el.textContent = '+1';
+        el.style.left = (clientX - rect.left) + 'px';
+        el.style.top = (clientY - rect.top) + 'px';
+        plate.appendChild(el);
+        setTimeout(() => el.remove(), 900);
+      }
+
+      async function pet(plate, clientX, clientY) {
+        spawnFloat(plate, clientX, clientY);
+        try {
+          const r = await fetch('/api/pets', { method: 'POST' });
+          if (!r.ok) return;
+          const { count } = await r.json();
+          setCount(count);
+          bump();
+        } catch {}
+      }
+
+      async function loadCount() {
+        try {
+          const r = await fetch('/api/pets');
+          if (!r.ok) return;
+          const { count } = await r.json();
+          setCount(count);
+        } catch {}
+      }
+
+      document.querySelectorAll('.plate').forEach((plate) => {
+        plate.addEventListener('click', (e) => {
+          pet(plate, e.clientX, e.clientY);
+        });
+        plate.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const rect = plate.getBoundingClientRect();
+            pet(plate, rect.left + rect.width / 2, rect.top + rect.height / 2);
+          }
+        });
+      });
+
+      loadCount();
+    })();
+  </script>
 </body>
 </html>
