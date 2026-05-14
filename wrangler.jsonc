@@ -1,14 +1,22 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "wrangell-dog",
-  "compatibility_date": "2026-05-13",
-  "observability": {
-    "enabled": true
-  },
-  "assets": {
-    "directory": "./public"
-  },
-  "compatibility_flags": [
-    "nodejs_compat"
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "wrangell-dog",
+	"main": "src/index.js",
+	"compatibility_date": "2026-05-13",
+	"observability": {
+		"enabled": true
+	},
+	"assets": {
+		"directory": "./public",
+		"binding": "ASSETS"
+	},
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"kv_namespaces": [
+		{
+			"binding": "PETS",
+			"id": "4bb7f3d585ac4b37a5c2b6e4d3b5a1b0"
+		}
+	]
 }
