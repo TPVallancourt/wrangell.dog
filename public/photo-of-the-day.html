@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo of the Day · Wrangell.dog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ece4cf;
+      --bg-deep: #e3dabf;
+      --ink: #1a1410;
+      --ink-muted: #6b5d48;
+      --accent: #c43d1f;
+      --rule: rgba(26, 20, 16, 0.85);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { background: var(--bg); }
+
+    body {
+      font-family: 'Fraunces', Georgia, serif;
+      color: var(--ink);
+      background: var(--bg);
+      background-image:
+        radial-gradient(rgba(26, 20, 16, 0.05) 1px, transparent 1px),
+        radial-gradient(rgba(26, 20, 16, 0.025) 1px, transparent 1px);
+      background-size: 3px 3px, 7px 7px;
+      background-position: 0 0, 1px 2px;
+      min-height: 100vh;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 40px 36px 72px;
+    }
+
+    /* ---------- Masthead ---------- */
+    .masthead {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--rule);
+      animation: rise 0.9s ease-out both;
+    }
+    .masthead a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(26, 20, 16, 0.25);
+      padding-bottom: 1px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .masthead a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+    .masthead .mark { color: var(--accent); margin-right: 8px; }
+
+    /* ---------- Kicker ---------- */
+    .kicker {
+      margin-top: 56px;
+      margin-bottom: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      animation: rise 1.0s 0.1s ease-out both;
+    }
+
+    /* ---------- Date headline ---------- */
+    .date-line {
+      font-weight: 300;
+      font-size: clamp(42px, 8vw, 120px);
+      line-height: 0.92;
+      letter-spacing: -0.03em;
+      margin-bottom: 40px;
+      font-variation-settings: "opsz" 144;
+      animation: rise 1.1s 0.18s ease-out both;
+    }
+    .date-line em {
+      font-style: italic;
+      font-weight: 420;
+      color: var(--accent);
+    }
+
+    /* ---------- Photo ---------- */
+    .photo-wrap {
+      animation: rise 1.0s 0.3s ease-out both;
+    }
+
+    .frame {
+      position: relative;
+      background: var(--bg-deep);
+    }
+    .frame::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      box-shadow: inset 0 0 0 1px rgba(26, 20, 16, 0.08);
+      pointer-events: none;
+    }
+    .frame img {
+      width: 100%;
+      height: auto;
+      display: block;
+      filter: contrast(1.02) saturate(0.96);
+    }
+
+    figcaption {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 24px;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--rule);
+    }
+    .plate-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .plate-note {
+      font-size: clamp(14px, 1.3vw, 17px);
+      font-style: italic;
+      color: var(--ink-muted);
+      text-align: right;
+      font-variation-settings: "opsz" 14;
+    }
+
+    /* ---------- Footer ---------- */
+    footer {
+      margin-top: 80px;
+      padding-top: 16px;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      animation: rise 1.0s 0.44s ease-out both;
+    }
+    footer a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(26, 20, 16, 0.25);
+      padding-bottom: 1px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    footer a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+    footer .ornament { color: var(--accent); margin-right: 8px; font-size: 13px; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+
+    @media (max-width: 760px) {
+      .page { padding: 24px 20px 56px; }
+      .date-line { font-size: 13vw; margin-top: 36px; }
+      figcaption { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .plate-note { text-align: left; }
+      footer { flex-direction: column; gap: 6px; margin-top: 56px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="masthead">
+      <span><a href="index.html">← Wrangell.dog</a></span>
+      <span><span class="mark">●</span>Photo of the Day</span>
+    </div>
+
+    <p class="kicker">Daily edition</p>
+    <h1 class="date-line" id="date-display">&nbsp;</h1>
+
+    <div class="photo-wrap">
+      <figure>
+        <div class="frame">
+          <img id="potd-img" src="" alt="Wrangell, photo of the day">
+        </div>
+        <figcaption>
+          <span class="plate-num" id="plate-label">Plate №—</span>
+          <span class="plate-note">Today's dispatch from the archive</span>
+        </figcaption>
+      </figure>
+    </div>
+
+    <footer>
+      <span>© MMXXVI · <a href="index.html">Wrangell.dog</a></span>
+      <span><a href="#" id="shuffle-link">Different photo</a></span>
+      <span><span class="ornament">❦</span>Updated daily</span>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      const TOTAL = 99;
+
+      function todayIndex() {
+        const d = new Date();
+        const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+        return (seed % TOTAL) + 1;
+      }
+
+      function fmt2(n) { return String(n).padStart(2, '0'); }
+
+      function setImage(n) {
+        document.getElementById('potd-img').src = `images/dog-${n}.jpeg`;
+        document.getElementById('potd-img').alt = `Wrangell, plate ${n}`;
+        document.getElementById('plate-label').textContent = `Plate №${fmt2(n)}`;
+      }
+
+      function renderDate() {
+        const d = new Date();
+        const months = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December'];
+        const day = d.getDate();
+        const suffix = [,'st','nd','rd'][day % 100 > 10 && day % 100 < 14 ? 0 : day % 10] || 'th';
+        document.getElementById('date-display').innerHTML =
+          `${months[d.getMonth()]} <em>${day}${suffix}</em>`;
+      }
+
+      let shuffleIndex = null;
+
+      document.getElementById('shuffle-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        const daily = todayIndex();
+        let next;
+        do {
+          next = Math.floor(Math.random() * TOTAL) + 1;
+        } while (next === (shuffleIndex ?? daily));
+        shuffleIndex = next;
+        setImage(next);
+      });
+
+      renderDate();
+      setImage(todayIndex());
+    })();
+  </script>
+</body>
+</html>
