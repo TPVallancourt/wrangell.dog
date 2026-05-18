@@ -203,7 +203,7 @@
         </div>
         <figcaption>
           <span class="plate-num" id="plate-label">Plate №—</span>
-          <span class="plate-note">Today's dispatch from the archive</span>
+          <span class="plate-note" id="plate-caption">&nbsp;</span>
         </figcaption>
       </figure>
     </div>
@@ -216,9 +216,11 @@
     </footer>
   </div>
 
+  <script src="captions.js"></script>
   <script>
     (() => {
-      const TOTAL = 99;
+      const captions = window.WRANGELL_CAPTIONS || [];
+      const TOTAL = captions.length || 99;
 
       function todayIndex() {
         const d = new Date();
@@ -232,6 +234,7 @@
         document.getElementById('potd-img').src = `images/dog-${n}.jpeg`;
         document.getElementById('potd-img').alt = `Wrangell, plate ${n}`;
         document.getElementById('plate-label').textContent = `Plate №${fmt2(n)}`;
+        document.getElementById('plate-caption').textContent = captions[n - 1] || '';
       }
 
       function renderDate() {

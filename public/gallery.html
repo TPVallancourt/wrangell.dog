@@ -119,14 +119,19 @@
 
     .plate {
       position: relative;
-      animation: rise 1.0s ease-out both;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.9s ease-out, transform 0.9s ease-out;
     }
+    .plate.in-view { opacity: 1; transform: translateY(0); }
     .plate:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; }
-    .plate-1 { grid-column: 1 / span 8; animation-delay: 0.42s; }
-    .plate-2 { grid-column: 6 / span 7; animation-delay: 0.56s; }
-    .plate-3 { grid-column: 2 / span 10; animation-delay: 0.70s; }
+
+    /* Repeating editorial cadence: left-wide, right-wide, centered-wider. */
+    .plate.span-l { grid-column: 1 / span 8; }
+    .plate.span-r { grid-column: 6 / span 7; }
+    .plate.span-c { grid-column: 2 / span 10; }
 
     .plate figure { margin: 0; }
     .frame {
@@ -300,36 +305,12 @@
     </a>
 
     <div class="section-label">
-      <span>Plates I&ndash;III</span>
+      <span>The full plate</span>
       <span class="line"></span>
       <span><span id="pet-count">&mdash;</span> pets given</span>
     </div>
 
-    <main>
-      <figure class="plate plate-1" role="button" tabindex="0" aria-label="Pet Wrangell">
-        <div class="frame"><img src="images/dog-1.jpeg" alt="Wrangell, plate one"></div>
-        <figcaption>
-          <span class="plate-num">Plate №01</span>
-          <span class="plate-title">Costumed, briefly</span>
-        </figcaption>
-      </figure>
-
-      <figure class="plate plate-2" role="button" tabindex="0" aria-label="Pet Wrangell">
-        <div class="frame"><img src="images/dog-2.jpeg" alt="Wrangell, plate two"></div>
-        <figcaption>
-          <span class="plate-num">Plate №02</span>
-          <span class="plate-title">An evening in</span>
-        </figcaption>
-      </figure>
-
-      <figure class="plate plate-3" role="button" tabindex="0" aria-label="Pet Wrangell">
-        <div class="frame"><img src="images/dog-3.jpeg" alt="Wrangell, plate three"></div>
-        <figcaption>
-          <span class="plate-num">Plate №03</span>
-          <span class="plate-title">Under wool, undisturbed</span>
-        </figcaption>
-      </figure>
-    </main>
+    <main id="gallery"></main>
 
     <footer>
       <span>© MMXXVI · Wrangell.dog</span>
@@ -338,13 +319,75 @@
     </footer>
   </div>
 
+  <script src="captions.js"></script>
   <script>
     (() => {
+      const captions = window.WRANGELL_CAPTIONS || [];
+      const total = captions.length;
+      const gallery = document.getElementById('gallery');
+      const spanClasses = ['span-l', 'span-r', 'span-c'];
+
+      const ordinals = ['one','two','three','four','five','six','seven','eight','nine','ten'];
+      const altFor = (n) => `Wrangell, plate ${ordinals[n - 1] || n}`;
+      const fmt2 = (n) => String(n).padStart(2, '0');
+
+      // Build all plates up front so they're in the DOM for SEO-ish crawls and noJS-after-load users.
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < total; i++) {
+        const n = i + 1;
+        const fig = document.createElement('figure');
+        fig.className = `plate ${spanClasses[i % spanClasses.length]}`;
+        fig.setAttribute('role', 'button');
+        fig.setAttribute('tabindex', '0');
+        fig.setAttribute('aria-label', 'Pet Wrangell');
+
+        const frame = document.createElement('div');
+        frame.className = 'frame';
+        const img = document.createElement('img');
+        img.src = `images/dog-${n}.jpeg`;
+        img.alt = altFor(n);
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        frame.appendChild(img);
+
+        const cap = document.createElement('figcaption');
+        const num = document.createElement('span');
+        num.className = 'plate-num';
+        num.textContent = `Plate №${fmt2(n)}`;
+        const title = document.createElement('span');
+        title.className = 'plate-title';
+        title.textContent = captions[i] || '';
+        cap.appendChild(num);
+        cap.appendChild(title);
+
+        fig.appendChild(frame);
+        fig.appendChild(cap);
+        frag.appendChild(fig);
+      }
+      gallery.appendChild(frag);
+
+      // Stagger fade-in as plates scroll into view.
+      const plates = gallery.querySelectorAll('.plate');
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) {
+              e.target.classList.add('in-view');
+              io.unobserve(e.target);
+            }
+          }
+        }, { rootMargin: '0px 0px -10% 0px' });
+        plates.forEach((p) => io.observe(p));
+      } else {
+        plates.forEach((p) => p.classList.add('in-view'));
+      }
+
+      // ---------- Pet counter ----------
       const counterEl = document.getElementById('pet-count');
-      const fmt = (n) => n.toLocaleString('en-US');
+      const fmtNum = (n) => n.toLocaleString('en-US');
 
       function setCount(n) {
-        counterEl.textContent = fmt(n);
+        counterEl.textContent = fmtNum(n);
       }
 
       function bump() {
@@ -384,17 +427,19 @@
         } catch {}
       }
 
-      document.querySelectorAll('.plate').forEach((plate) => {
-        plate.addEventListener('click', (e) => {
-          pet(plate, e.clientX, e.clientY);
-        });
-        plate.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            const rect = plate.getBoundingClientRect();
-            pet(plate, rect.left + rect.width / 2, rect.top + rect.height / 2);
-          }
-        });
+      // Delegate clicks/keys instead of attaching 99 handlers.
+      gallery.addEventListener('click', (e) => {
+        const plate = e.target.closest('.plate');
+        if (!plate) return;
+        pet(plate, e.clientX, e.clientY);
+      });
+      gallery.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const plate = e.target.closest('.plate');
+        if (!plate) return;
+        e.preventDefault();
+        const rect = plate.getBoundingClientRect();
+        pet(plate, rect.left + rect.width / 2, rect.top + rect.height / 2);
       });
 
       loadCount();
