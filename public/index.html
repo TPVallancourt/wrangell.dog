@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Best Dog · A Monograph</title>
+  <title>Photo of the Day · Wrangell.dog</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -57,81 +57,51 @@
       border-bottom: 1px solid var(--rule);
       animation: rise 0.9s ease-out both;
     }
-    .masthead .vol { color: var(--ink); }
+    .masthead a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(26, 20, 16, 0.25);
+      padding-bottom: 1px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .masthead a:hover { color: var(--accent); border-bottom-color: var(--accent); }
     .masthead .mark { color: var(--accent); margin-right: 8px; }
 
-    /* ---------- Headline ---------- */
-    .headline {
-      font-weight: 380;
-      font-size: clamp(64px, 13vw, 200px);
-      line-height: 0.9;
-      letter-spacing: -0.035em;
+    /* ---------- Kicker ---------- */
+    .kicker {
       margin-top: 56px;
-      margin-bottom: 32px;
-      font-variation-settings: "opsz" 144;
-      animation: rise 1.1s 0.08s ease-out both;
-    }
-    .headline em {
-      font-style: italic;
-      font-weight: 420;
-      color: var(--accent);
-      padding-right: 0.04em;
-    }
-    .headline .period { color: var(--accent); }
-
-    .dek {
-      max-width: 560px;
-      font-size: clamp(17px, 1.6vw, 21px);
-      font-style: italic;
-      line-height: 1.45;
-      color: var(--ink-muted);
-      font-variation-settings: "opsz" 18;
-      animation: rise 1.1s 0.2s ease-out both;
-    }
-
-    /* ---------- Section label ---------- */
-    .section-label {
-      display: flex;
-      align-items: baseline;
-      gap: 14px;
-      margin-top: 120px;
-      margin-bottom: 28px;
+      margin-bottom: 12px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
       letter-spacing: 0.22em;
       text-transform: uppercase;
       color: var(--ink-muted);
-      animation: rise 1.0s 0.32s ease-out both;
-    }
-    .section-label .line {
-      flex: 1;
-      height: 1px;
-      background: var(--rule);
+      animation: rise 1.0s 0.1s ease-out both;
     }
 
-    /* ---------- Plates ---------- */
-    main {
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 24px;
-      row-gap: 112px;
+    /* ---------- Date headline ---------- */
+    .date-line {
+      font-weight: 300;
+      font-size: clamp(42px, 8vw, 120px);
+      line-height: 0.92;
+      letter-spacing: -0.03em;
+      margin-bottom: 40px;
+      font-variation-settings: "opsz" 144;
+      animation: rise 1.1s 0.18s ease-out both;
+    }
+    .date-line em {
+      font-style: italic;
+      font-weight: 420;
+      color: var(--accent);
     }
 
-    .plate {
-      position: relative;
-      animation: rise 1.0s ease-out both;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
+    /* ---------- Photo ---------- */
+    .photo-wrap {
+      animation: rise 1.0s 0.3s ease-out both;
     }
-    .plate:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; }
-    .plate-1 { grid-column: 1 / span 8; animation-delay: 0.42s; }
-    .plate-2 { grid-column: 6 / span 7; animation-delay: 0.56s; }
-    .plate-3 { grid-column: 2 / span 10; animation-delay: 0.70s; }
 
-    .plate figure { margin: 0; }
     .frame {
       position: relative;
-      overflow: hidden;
       background: var(--bg-deep);
     }
     .frame::after {
@@ -141,14 +111,12 @@
       box-shadow: inset 0 0 0 1px rgba(26, 20, 16, 0.08);
       pointer-events: none;
     }
-    .plate img {
+    .frame img {
       width: 100%;
       height: auto;
       display: block;
       filter: contrast(1.02) saturate(0.96);
-      transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
     }
-    .plate:hover img { transform: scale(1.018); }
 
     figcaption {
       display: flex;
@@ -167,17 +135,17 @@
       color: var(--accent);
       white-space: nowrap;
     }
-    .plate-title {
-      font-size: clamp(15px, 1.4vw, 18px);
+    .plate-note {
+      font-size: clamp(14px, 1.3vw, 17px);
       font-style: italic;
-      color: var(--ink);
+      color: var(--ink-muted);
       text-align: right;
       font-variation-settings: "opsz" 14;
     }
 
     /* ---------- Footer ---------- */
     footer {
-      margin-top: 140px;
+      margin-top: 80px;
       padding-top: 16px;
       border-top: 1px solid var(--rule);
       display: flex;
@@ -188,8 +156,8 @@
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--ink-muted);
+      animation: rise 1.0s 0.44s ease-out both;
     }
-    footer .ornament { color: var(--accent); margin-right: 8px; font-size: 13px; }
     footer a {
       color: inherit;
       text-decoration: none;
@@ -198,73 +166,11 @@
       transition: color 0.2s, border-color 0.2s;
     }
     footer a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+    footer .ornament { color: var(--accent); margin-right: 8px; font-size: 13px; }
 
     @keyframes rise {
       from { opacity: 0; transform: translateY(24px); }
       to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ---------- Photo of the day strip ---------- */
-    .potd-strip {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 20px;
-      margin-top: 44px;
-      padding: 13px 18px;
-      border-top: 1px solid var(--rule);
-      border-bottom: 1px solid var(--rule);
-      text-decoration: none;
-      color: var(--ink);
-      background: var(--bg-deep);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      transition: background 0.2s, color 0.2s;
-      animation: rise 1.1s 0.26s ease-out both;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .potd-strip:hover {
-      background: var(--ink);
-      color: var(--bg);
-    }
-    .potd-strip:hover .potd-accent { color: var(--bg); opacity: 0.55; }
-    .potd-accent {
-      color: var(--accent);
-      transition: color 0.2s, opacity 0.2s;
-    }
-    .potd-arrow {
-      font-size: 16px;
-      line-height: 1;
-      flex-shrink: 0;
-    }
-
-    /* ---------- Pet counter ---------- */
-    #pet-count { font-variant-numeric: tabular-nums; display: inline-block; }
-    #pet-count.bump { animation: bump 0.45s ease-out; }
-    @keyframes bump {
-      0%   { transform: translateY(0); color: inherit; }
-      40%  { transform: translateY(-3px); color: var(--accent); }
-      100% { transform: translateY(0); color: inherit; }
-    }
-
-    .pet-float {
-      position: absolute;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.05em;
-      color: var(--accent);
-      pointer-events: none;
-      transform: translate(-50%, -50%);
-      animation: petFloat 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
-      z-index: 5;
-      text-shadow: 0 1px 6px rgba(236, 228, 207, 0.85);
-    }
-    @keyframes petFloat {
-      from { opacity: 1; transform: translate(-50%, -50%) scale(0.9); }
-      to   { opacity: 0; transform: translate(-50%, calc(-50% - 48px)) scale(1.05); }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -273,131 +179,86 @@
 
     @media (max-width: 760px) {
       .page { padding: 24px 20px 56px; }
-      .headline { font-size: 19vw; margin-top: 36px; }
-      .section-label { margin-top: 72px; }
-      main { row-gap: 56px; }
-      .plate-1, .plate-2, .plate-3 { grid-column: 1 / -1; }
+      .date-line { font-size: 13vw; margin-top: 36px; }
       figcaption { flex-direction: column; align-items: flex-start; gap: 6px; }
-      .plate-title { text-align: left; }
-      footer { flex-direction: column; gap: 6px; margin-top: 72px; }
+      .plate-note { text-align: left; }
+      footer { flex-direction: column; gap: 6px; margin-top: 56px; }
     }
   </style>
 </head>
 <body>
   <div class="page">
     <div class="masthead">
-      <span class="vol">Vol. I · Iss. 01 · MMXXVI</span>
       <span><span class="mark">●</span>Wrangell.dog</span>
+      <span><a href="gallery.html">Gallery →</a></span>
     </div>
 
-    <h1 class="headline">This <em>is</em> the<br>best dog<span class="period">.</span></h1>
+    <p class="kicker">Daily edition</p>
+    <h1 class="date-line" id="date-display">&nbsp;</h1>
 
-    <p class="dek">An ongoing monograph of one (1) very good boy, observed at close range.</p>
-
-    <a href="photo-of-the-day.html" class="potd-strip">
-      <span><span class="potd-accent">●&nbsp;</span>Photo of the Day &mdash; Today&rsquo;s Edition</span>
-      <span class="potd-arrow">→</span>
-    </a>
-
-    <div class="section-label">
-      <span>Plates I&ndash;III</span>
-      <span class="line"></span>
-      <span><span id="pet-count">&mdash;</span> pets given</span>
+    <div class="photo-wrap">
+      <figure>
+        <div class="frame">
+          <img id="potd-img" src="" alt="Wrangell, photo of the day">
+        </div>
+        <figcaption>
+          <span class="plate-num" id="plate-label">Plate №—</span>
+          <span class="plate-note">Today's dispatch from the archive</span>
+        </figcaption>
+      </figure>
     </div>
-
-    <main>
-      <figure class="plate plate-1" role="button" tabindex="0" aria-label="Pet Wrangell">
-        <div class="frame"><img src="images/dog-1.jpeg" alt="Wrangell, plate one"></div>
-        <figcaption>
-          <span class="plate-num">Plate №01</span>
-          <span class="plate-title">Costumed, briefly</span>
-        </figcaption>
-      </figure>
-
-      <figure class="plate plate-2" role="button" tabindex="0" aria-label="Pet Wrangell">
-        <div class="frame"><img src="images/dog-2.jpeg" alt="Wrangell, plate two"></div>
-        <figcaption>
-          <span class="plate-num">Plate №02</span>
-          <span class="plate-title">An evening in</span>
-        </figcaption>
-      </figure>
-
-      <figure class="plate plate-3" role="button" tabindex="0" aria-label="Pet Wrangell">
-        <div class="frame"><img src="images/dog-3.jpeg" alt="Wrangell, plate three"></div>
-        <figcaption>
-          <span class="plate-num">Plate №03</span>
-          <span class="plate-title">Under wool, undisturbed</span>
-        </figcaption>
-      </figure>
-    </main>
 
     <footer>
-      <span>© MMXXVI · Wrangell.dog</span>
+      <span>© MMXXVI · <a href="gallery.html">Wrangell.dog</a></span>
+      <span><a href="#" id="shuffle-link">Different photo</a></span>
       <span><a href="classic.html">Classic view</a></span>
-      <span><span class="ornament">❦</span>For the record</span>
+      <span><span class="ornament">❦</span>Updated daily</span>
     </footer>
   </div>
 
   <script>
     (() => {
-      const counterEl = document.getElementById('pet-count');
-      const fmt = (n) => n.toLocaleString('en-US');
+      const TOTAL = 99;
 
-      function setCount(n) {
-        counterEl.textContent = fmt(n);
+      function todayIndex() {
+        const d = new Date();
+        const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+        return (seed % TOTAL) + 1;
       }
 
-      function bump() {
-        counterEl.classList.remove('bump');
-        void counterEl.offsetWidth;
-        counterEl.classList.add('bump');
+      function fmt2(n) { return String(n).padStart(2, '0'); }
+
+      function setImage(n) {
+        document.getElementById('potd-img').src = `images/dog-${n}.jpeg`;
+        document.getElementById('potd-img').alt = `Wrangell, plate ${n}`;
+        document.getElementById('plate-label').textContent = `Plate №${fmt2(n)}`;
       }
 
-      function spawnFloat(plate, clientX, clientY) {
-        const rect = plate.getBoundingClientRect();
-        const el = document.createElement('span');
-        el.className = 'pet-float';
-        el.textContent = '+1';
-        el.style.left = (clientX - rect.left) + 'px';
-        el.style.top = (clientY - rect.top) + 'px';
-        plate.appendChild(el);
-        setTimeout(() => el.remove(), 900);
+      function renderDate() {
+        const d = new Date();
+        const months = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December'];
+        const day = d.getDate();
+        const suffix = [,'st','nd','rd'][day % 100 > 10 && day % 100 < 14 ? 0 : day % 10] || 'th';
+        document.getElementById('date-display').innerHTML =
+          `${months[d.getMonth()]} <em>${day}${suffix}</em>`;
       }
 
-      async function pet(plate, clientX, clientY) {
-        spawnFloat(plate, clientX, clientY);
-        try {
-          const r = await fetch('/api/pets', { method: 'POST' });
-          if (!r.ok) return;
-          const { count } = await r.json();
-          setCount(count);
-          bump();
-        } catch {}
-      }
+      let shuffleIndex = null;
 
-      async function loadCount() {
-        try {
-          const r = await fetch('/api/pets');
-          if (!r.ok) return;
-          const { count } = await r.json();
-          setCount(count);
-        } catch {}
-      }
-
-      document.querySelectorAll('.plate').forEach((plate) => {
-        plate.addEventListener('click', (e) => {
-          pet(plate, e.clientX, e.clientY);
-        });
-        plate.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            const rect = plate.getBoundingClientRect();
-            pet(plate, rect.left + rect.width / 2, rect.top + rect.height / 2);
-          }
-        });
+      document.getElementById('shuffle-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        const daily = todayIndex();
+        let next;
+        do {
+          next = Math.floor(Math.random() * TOTAL) + 1;
+        } while (next === (shuffleIndex ?? daily));
+        shuffleIndex = next;
+        setImage(next);
       });
 
-      loadCount();
+      renderDate();
+      setImage(todayIndex());
     })();
   </script>
 </body>
