@@ -227,24 +227,26 @@
     }
     .modal-eyebrow {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 0.22em;
+      font-size: 13px;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
       color: var(--accent);
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     .modal-headline {
-      font-size: clamp(20px, 4vw, 28px);
+      font-size: clamp(14px, 3vw, 18px);
       font-weight: 350;
-      line-height: 1.15;
-      letter-spacing: -0.02em;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
       font-variation-settings: "opsz" 48;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       margin-bottom: 10px;
     }
     .modal-headline em {
       font-style: italic;
       font-weight: 500;
-      color: var(--accent);
     }
     .modal-note {
       font-size: 14px;
@@ -319,6 +321,7 @@
       <span>© MMXXVI · <a href="gallery.html">Wrangell.dog</a></span>
       <span><a href="#" id="shuffle-link">Different photo</a></span>
       <span><a href="classic.html">Classic view</a></span>
+      <span><a href="#" id="announce-link">Announcement</a></span>
       <span><span class="ornament">❦</span>Updated daily</span>
     </footer>
   </div>
@@ -397,12 +400,22 @@
         localStorage.setItem(SEEN_KEY, '1');
       }
 
+      window.showAnnouncement = function() {
+        modal.classList.remove('hidden');
+      };
+
+      document.getElementById('modal-close-x').addEventListener('click', dismiss);
+      document.getElementById('modal-dismiss').addEventListener('click', dismiss);
+      modal.addEventListener('click', (e) => { if (e.target === modal) dismiss(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) dismiss(); });
+
+      document.getElementById('announce-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        window.showAnnouncement();
+      });
+
       if (!localStorage.getItem(SEEN_KEY)) {
         modal.classList.remove('hidden');
-        document.getElementById('modal-close-x').addEventListener('click', dismiss);
-        document.getElementById('modal-dismiss').addEventListener('click', dismiss);
-        modal.addEventListener('click', (e) => { if (e.target === modal) dismiss(); });
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') dismiss(); });
       }
     })();
   </script>
