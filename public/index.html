@@ -202,9 +202,12 @@
 
     .modal-card {
       background: var(--bg);
-      max-width: 560px;
+      max-width: 520px;
       width: 100%;
+      max-height: calc(100vh - 48px);
+      overflow: hidden;
       position: relative;
+      box-shadow: 0 8px 40px rgba(26, 20, 16, 0.45);
       animation: rise 0.4s 0.1s ease-out both;
     }
     .modal-card::after {
@@ -213,10 +216,18 @@
       inset: 0;
       box-shadow: inset 0 0 0 1px rgba(26, 20, 16, 0.12);
       pointer-events: none;
+      z-index: 1;
+    }
+    .modal-img-wrap {
+      background: var(--bg-deep);
+      padding: 14px 14px 0;
+      border-bottom: 1px solid rgba(26, 20, 16, 0.1);
     }
     .modal-img {
       width: 100%;
-      height: auto;
+      max-height: min(48vh, 380px);
+      object-fit: cover;
+      object-position: center top;
       display: block;
       filter: contrast(1.02) saturate(0.96);
     }
@@ -325,7 +336,9 @@
   <div class="modal-backdrop hidden" id="celebration-modal" role="dialog" aria-modal="true" aria-label="Wrangell graduates nose work">
     <div class="modal-card">
       <button class="modal-close" id="modal-close-x" aria-label="Close">×</button>
-      <img class="modal-img" src="images/dog-100.jpeg" alt="Wrangell with his nose work graduation certificate">
+      <div class="modal-img-wrap">
+        <img class="modal-img" src="images/dog-100.jpeg" alt="Wrangell with his nose work graduation certificate">
+      </div>
       <div class="modal-body">
         <p class="modal-eyebrow">Special announcement · Class of 2026</p>
         <h2 class="modal-headline">Wrangell graduates from <em>intermediate nose work</em></h2>
