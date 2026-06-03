@@ -85,11 +85,11 @@ async function main() {
 
   if (!process.env.ANTHROPIC_API_KEY) {
     process.stderr.write(
-      `\nError: ${missing.length} image(s) need captions but ANTHROPIC_API_KEY is not set.\n` +
+      `\nWarning: ${missing.length} image(s) need captions but ANTHROPIC_API_KEY is not set.\n` +
       `Missing: ${missing.map(n => `dog-${n}.jpeg`).join(', ')}\n` +
-      `Set the key and run: node scripts/caption-new-images.js\n\n`
+      `Run \`node scripts/caption-new-images.js\` with the key set before merging.\n\n`
     );
-    process.exit(1);
+    return;
   }
 
   process.stdout.write(`Captioning ${missing.length} new image(s) via Claude...\n`);
