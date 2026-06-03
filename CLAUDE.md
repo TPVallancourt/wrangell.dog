@@ -17,6 +17,10 @@ public/
   images/           # dog-N.jpeg, referenced as images/dog-N.jpeg
 src/
   index.js          # Worker entry: /api/pets + asset passthrough
+scripts/
+  caption-new-images.js  # generates missing captions via Claude vision; run by pre-commit hook
+.githooks/
+  pre-commit        # invokes caption-new-images.js before every commit
 wrangler.jsonc      # PETS KV binding, ASSETS binding, main = src/index.js
 ```
 
@@ -25,10 +29,18 @@ Each HTML page is self-contained (inline CSS, loads Google Fonts directly). `ind
 ## Adding photos
 
 1. Drop the file as `public/images/dog-<N>.jpeg` (next sequential number).
-2. Add a caption at the matching index in `public/captions.js` (entry `N-1` corresponds to `dog-N.jpeg`).
-3. Captions must read standalone — each one is shown solo on the homepage on its assigned day, so avoid "again", "also", "same", etc.
+2. Commit — the pre-commit hook runs `scripts/caption-new-images.js`, which calls Claude vision to generate a caption and stages the updated `captions.js` automatically. Requires `ANTHROPIC_API_KEY` in the environment.
+3. To generate or preview captions without committing: `node scripts/caption-new-images.js`
+4. To override a generated caption, edit `public/captions.js` before the commit lands.
+
+Captions must read standalone — each one is shown solo on the homepage on its assigned day, so avoid "again", "also", "same", etc. Style: 2–5 words, no articles, wry and observational.
 
 The homepage picks the plate via `(year*10000 + month*100 + day) % TOTAL + 1`, where `TOTAL = captions.length`. Adding photos without captions will shift the deterministic daily rotation.
+
+**One-time hook setup** (already done on the main clone):
+```
+git config core.hooksPath .githooks
+```
 
 ## Commands
 
