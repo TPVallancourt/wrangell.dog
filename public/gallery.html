@@ -272,6 +272,35 @@
       to   { opacity: 0; transform: translate(-50%, calc(-50% - 48px)) scale(1.05); }
     }
 
+    /* ---------- Sort bar ---------- */
+    .sort-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: -16px;
+      margin-bottom: 28px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+    }
+    .sort-bar .sort-label { margin-right: 2px; }
+    .sort-btn {
+      background: none;
+      border: 1px solid rgba(26, 20, 16, 0.25);
+      padding: 5px 12px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .sort-btn:hover { color: var(--ink); border-color: rgba(26, 20, 16, 0.6); }
+    .sort-btn.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation: none !important; transition: none !important; }
     }
@@ -431,6 +460,13 @@
       <span><span id="pet-count">&mdash;</span> pets given</span>
     </div>
 
+    <div class="sort-bar">
+      <span class="sort-label">Sort:</span>
+      <button class="sort-btn active" data-sort="newest">Newest</button>
+      <button class="sort-btn" data-sort="oldest">Oldest</button>
+      <button class="sort-btn" data-sort="random">Random</button>
+    </div>
+
     <main id="gallery"></main>
 
     <footer>
@@ -493,56 +529,83 @@
       const altFor = (n) => `Wrangell, plate ${ordinals[n - 1] || n}`;
       const fmt2 = (n) => String(n).padStart(2, '0');
 
-      // Build all plates up front so they're in the DOM for SEO-ish crawls and noJS-after-load users.
-      const frag = document.createDocumentFragment();
-      for (let i = 0; i < total; i++) {
-        const n = i + 1;
-        const fig = document.createElement('figure');
-        fig.className = `plate ${spanClasses[i % spanClasses.length]}`;
-        fig.setAttribute('role', 'button');
-        fig.setAttribute('tabindex', '0');
-        fig.setAttribute('aria-label', 'Pet Wrangell');
-
-        const frame = document.createElement('div');
-        frame.className = 'frame';
-        const img = document.createElement('img');
-        img.src = `images/dog-${n}.jpeg`;
-        img.alt = altFor(n);
-        img.loading = 'lazy';
-        img.decoding = 'async';
-        frame.appendChild(img);
-
-        const cap = document.createElement('figcaption');
-        const num = document.createElement('span');
-        num.className = 'plate-num';
-        num.textContent = `Plate №${fmt2(n)}`;
-        const title = document.createElement('span');
-        title.className = 'plate-title';
-        title.textContent = captions[i] || '';
-        cap.appendChild(num);
-        cap.appendChild(title);
-
-        fig.appendChild(frame);
-        fig.appendChild(cap);
-        frag.appendChild(fig);
+      function getOrder(sort) {
+        const indices = Array.from({ length: total }, (_, i) => i + 1);
+        if (sort === 'oldest') return indices;
+        if (sort === 'newest') return indices.reverse();
+        // Fisher-Yates shuffle for random
+        for (let i = indices.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+        return indices;
       }
-      gallery.appendChild(frag);
 
-      // Stagger fade-in as plates scroll into view.
-      const plates = gallery.querySelectorAll('.plate');
-      if ('IntersectionObserver' in window) {
-        const io = new IntersectionObserver((entries) => {
-          for (const e of entries) {
-            if (e.isIntersecting) {
-              e.target.classList.add('in-view');
-              io.unobserve(e.target);
+      let activeIO = null;
+
+      function renderGallery(sort) {
+        if (activeIO) { activeIO.disconnect(); activeIO = null; }
+        gallery.innerHTML = '';
+
+        const order = getOrder(sort);
+        const frag = document.createDocumentFragment();
+        order.forEach((n, pos) => {
+          const fig = document.createElement('figure');
+          fig.className = `plate ${spanClasses[pos % spanClasses.length]}`;
+          fig.setAttribute('role', 'button');
+          fig.setAttribute('tabindex', '0');
+          fig.setAttribute('aria-label', 'Pet Wrangell');
+
+          const frame = document.createElement('div');
+          frame.className = 'frame';
+          const img = document.createElement('img');
+          img.src = `images/dog-${n}.jpeg`;
+          img.alt = altFor(n);
+          img.loading = 'lazy';
+          img.decoding = 'async';
+          frame.appendChild(img);
+
+          const cap = document.createElement('figcaption');
+          const num = document.createElement('span');
+          num.className = 'plate-num';
+          num.textContent = `Plate №${fmt2(n)}`;
+          const title = document.createElement('span');
+          title.className = 'plate-title';
+          title.textContent = captions[n - 1] || '';
+          cap.appendChild(num);
+          cap.appendChild(title);
+
+          fig.appendChild(frame);
+          fig.appendChild(cap);
+          frag.appendChild(fig);
+        });
+        gallery.appendChild(frag);
+
+        const plates = gallery.querySelectorAll('.plate');
+        if ('IntersectionObserver' in window) {
+          activeIO = new IntersectionObserver((entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                e.target.classList.add('in-view');
+                activeIO.unobserve(e.target);
+              }
             }
-          }
-        }, { rootMargin: '0px 0px -10% 0px' });
-        plates.forEach((p) => io.observe(p));
-      } else {
-        plates.forEach((p) => p.classList.add('in-view'));
+          }, { rootMargin: '0px 0px -10% 0px' });
+          plates.forEach((p) => activeIO.observe(p));
+        } else {
+          plates.forEach((p) => p.classList.add('in-view'));
+        }
       }
+
+      document.querySelectorAll('.sort-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.sort-btn').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderGallery(btn.dataset.sort);
+        });
+      });
+
+      renderGallery('newest');
 
       // ---------- Pet counter ----------
       const counterEl = document.getElementById('pet-count');
