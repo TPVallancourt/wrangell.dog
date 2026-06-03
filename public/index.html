@@ -177,6 +177,16 @@
       *, *::before, *::after { animation: none !important; transition: none !important; }
     }
 
+    @media (min-width: 761px) {
+      .frame { display: flex; justify-content: center; }
+      .frame img {
+        width: auto;
+        max-width: 100%;
+        max-height: calc(100vh - 540px);
+        min-height: 180px;
+      }
+    }
+
     @media (max-width: 760px) {
       .page { padding: 24px 20px 56px; }
       .date-line { font-size: 13vw; margin-top: 36px; }
