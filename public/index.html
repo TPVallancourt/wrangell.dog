@@ -207,16 +207,9 @@
       max-height: calc(100vh - 48px);
       overflow-y: auto;
       position: relative;
+      border: 1px solid rgba(26, 20, 16, 0.12);
       box-shadow: 0 8px 40px rgba(26, 20, 16, 0.45);
       animation: rise 0.4s 0.1s ease-out both;
-    }
-    .modal-card::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      box-shadow: inset 0 0 0 1px rgba(26, 20, 16, 0.12);
-      pointer-events: none;
-      z-index: 1;
     }
     .modal-img-wrap {
       background: var(--bg-deep);
