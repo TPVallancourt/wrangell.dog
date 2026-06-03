@@ -276,6 +276,14 @@
       *, *::before, *::after { animation: none !important; transition: none !important; }
     }
 
+    @media (min-width: 761px) {
+      .plate img {
+        max-height: 80vh;
+        object-fit: cover;
+        object-position: center;
+      }
+    }
+
     @media (max-width: 760px) {
       .page { padding: 24px 20px 56px; }
       .headline { font-size: 19vw; margin-top: 36px; }
