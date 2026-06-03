@@ -177,6 +177,23 @@
       *, *::before, *::after { animation: none !important; transition: none !important; }
     }
 
+    @media (min-width: 761px) {
+      .photo-wrap figure {
+        width: fit-content;
+        max-width: 100%;
+        margin: 0 auto;
+      }
+      .frame {
+        width: fit-content;
+        max-width: 100%;
+      }
+      .frame img {
+        width: auto;
+        max-width: 100%;
+        max-height: 70vh;
+      }
+    }
+
     @media (max-width: 760px) {
       .page { padding: 24px 20px 56px; }
       .date-line { font-size: 13vw; margin-top: 36px; }
