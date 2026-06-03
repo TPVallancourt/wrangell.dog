@@ -459,6 +459,10 @@
         e.preventDefault();
         modal.classList.remove('hidden');
       });
+
+      if (!localStorage.getItem(SEEN_KEY)) {
+        modal.classList.remove('hidden');
+      }
     })();
   </script>
   <script>
