@@ -214,7 +214,6 @@
     .modal-img-wrap {
       background: var(--bg-deep);
       padding: 14px 14px 0;
-      border-bottom: 1px solid rgba(26, 20, 16, 0.1);
     }
     .modal-img {
       width: 100%;
@@ -224,7 +223,7 @@
     }
     .modal-body {
       padding: 20px 24px 24px;
-      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
     }
     .modal-eyebrow {
       font-family: 'JetBrains Mono', monospace;
@@ -327,14 +326,14 @@
   <div class="modal-backdrop hidden" id="celebration-modal" role="dialog" aria-modal="true" aria-label="Wrangell graduates nose work">
     <div class="modal-card">
       <button class="modal-close" id="modal-close-x" aria-label="Close">×</button>
-      <div class="modal-img-wrap">
-        <img class="modal-img" src="images/dog-100.jpeg" alt="Wrangell with his nose work graduation certificate">
-      </div>
       <div class="modal-body">
         <p class="modal-eyebrow">Special announcement · Class of 2026</p>
         <h2 class="modal-headline">Wrangell graduates from <em>intermediate nose work</em></h2>
         <p class="modal-note">He found every single hide. We are so very proud of him.</p>
         <button class="modal-dismiss" id="modal-dismiss">Congratulations, Wrangell ↗</button>
+      </div>
+      <div class="modal-img-wrap">
+        <img class="modal-img" src="images/dog-100.jpeg" alt="Wrangell with his nose work graduation certificate">
       </div>
     </div>
   </div>
