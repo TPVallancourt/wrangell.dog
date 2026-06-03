@@ -184,6 +184,115 @@
       .plate-note { text-align: left; }
       footer { flex-direction: column; gap: 6px; margin-top: 56px; }
     }
+
+    /* ---------- Celebration Modal ---------- */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 20, 16, 0.72);
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9000;
+      padding: 24px;
+      animation: fade-in 0.35s ease-out both;
+    }
+    .modal-backdrop.hidden { display: none; }
+
+    .modal-card {
+      background: var(--bg);
+      max-width: 520px;
+      width: 100%;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+      position: relative;
+      border: 1px solid rgba(26, 20, 16, 0.12);
+      box-shadow: 0 8px 40px rgba(26, 20, 16, 0.45);
+      animation: rise 0.4s 0.1s ease-out both;
+    }
+    .modal-img-wrap {
+      background: var(--bg-deep);
+      padding: 14px 14px 0;
+    }
+    .modal-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      filter: contrast(1.02) saturate(0.96);
+    }
+    .modal-body {
+      padding: 20px 24px 24px;
+      border-bottom: 1px solid var(--rule);
+    }
+    .modal-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .modal-headline {
+      font-size: clamp(14px, 3vw, 18px);
+      font-weight: 350;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      font-variation-settings: "opsz" 48;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 10px;
+    }
+    .modal-headline em {
+      font-style: italic;
+      font-weight: 500;
+    }
+    .modal-note {
+      font-size: 14px;
+      font-style: italic;
+      color: var(--ink-muted);
+      font-variation-settings: "opsz" 14;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .modal-dismiss {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      background: none;
+      border: 1px solid rgba(26, 20, 16, 0.3);
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .modal-dismiss:hover { color: var(--accent); border-color: var(--accent); }
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      line-height: 1;
+      color: var(--bg);
+      background: rgba(26, 20, 16, 0.55);
+      border: none;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .modal-close:hover { background: var(--accent); }
+
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -212,8 +321,24 @@
       <span>© MMXXVI · <a href="gallery.html">Wrangell.dog</a></span>
       <span><a href="#" id="shuffle-link">Different photo</a></span>
       <span><a href="classic.html">Classic view</a></span>
+      <span><a href="#" id="announce-link">Announcement</a></span>
       <span><span class="ornament">❦</span>Updated daily</span>
     </footer>
+  </div>
+
+  <div class="modal-backdrop hidden" id="celebration-modal" role="dialog" aria-modal="true" aria-label="Wrangell graduates nose work">
+    <div class="modal-card">
+      <button class="modal-close" id="modal-close-x" aria-label="Close">×</button>
+      <div class="modal-body">
+        <p class="modal-eyebrow">Special announcement · Class of 2026</p>
+        <h2 class="modal-headline">Wrangell graduates from <em>intermediate nose work</em></h2>
+        <p class="modal-note">He found every single hide. We are so very proud of him.</p>
+        <button class="modal-dismiss" id="modal-dismiss">Congratulations, Wrangell ↗</button>
+      </div>
+      <div class="modal-img-wrap">
+        <img class="modal-img" src="images/dog-100.jpeg" alt="Wrangell with his nose work graduation certificate">
+      </div>
+    </div>
   </div>
 
   <script src="captions.js"></script>
@@ -262,6 +387,36 @@
 
       renderDate();
       setImage(todayIndex());
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const SEEN_KEY = 'wrangell-nosework-2026';
+      const modal = document.getElementById('celebration-modal');
+
+      function dismiss() {
+        modal.classList.add('hidden');
+        localStorage.setItem(SEEN_KEY, '1');
+      }
+
+      window.showAnnouncement = function() {
+        modal.classList.remove('hidden');
+      };
+
+      document.getElementById('modal-close-x').addEventListener('click', dismiss);
+      document.getElementById('modal-dismiss').addEventListener('click', dismiss);
+      modal.addEventListener('click', (e) => { if (e.target === modal) dismiss(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) dismiss(); });
+
+      document.getElementById('announce-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        window.showAnnouncement();
+      });
+
+      if (!localStorage.getItem(SEEN_KEY)) {
+        modal.classList.remove('hidden');
+      }
     })();
   </script>
 </body>
