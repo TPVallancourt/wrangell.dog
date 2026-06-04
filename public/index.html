@@ -151,6 +151,60 @@
       font-variation-settings: "opsz" 14;
     }
 
+    /* ---------- Pet the photo of the day ---------- */
+    .potd-pet {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .potd-pet-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink);
+      background: none;
+      border: 1px solid rgba(26, 20, 16, 0.3);
+      padding: 9px 18px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .potd-pet-btn:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+    .potd-pet-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .potd-pet-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      color: var(--ink-muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .potd-pet-count.bump { animation: potd-bump 0.45s ease-out; }
+    @keyframes potd-bump {
+      0%   { transform: translateY(0); color: var(--ink-muted); }
+      40%  { transform: translateY(-3px); color: var(--accent); }
+      100% { transform: translateY(0); color: var(--ink-muted); }
+    }
+    .pet-float {
+      position: absolute;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      animation: petFloat 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+      z-index: 5;
+      text-shadow: 0 1px 6px rgba(236, 228, 207, 0.85);
+    }
+    @keyframes petFloat {
+      from { opacity: 1; transform: translate(-50%, -50%) scale(0.9); }
+      to   { opacity: 0; transform: translate(-50%, calc(-50% - 48px)) scale(1.05); }
+    }
+
     /* ---------- Footer ---------- */
     footer {
       margin-top: 80px;
@@ -365,6 +419,10 @@
           <span class="plate-num" id="plate-label">Plate №—</span>
           <span class="plate-note" id="plate-caption">&nbsp;</span>
         </figcaption>
+        <div class="potd-pet">
+          <button class="potd-pet-btn" id="potd-pet" type="button">&#128062;&nbsp;Pet Wrangell</button>
+          <span class="potd-pet-count" id="potd-pet-count"></span>
+        </div>
       </figure>
     </div>
 
@@ -407,11 +465,22 @@
 
       function fmt2(n) { return String(n).padStart(2, '0'); }
 
+      let currentPlate = null;
+      let plateCounts = {};
+      const fmtPets = (n) => `🐾 ${(n || 0).toLocaleString('en-US')}`;
+      const petCountEl = document.getElementById('potd-pet-count');
+
+      function showPetCount(n) {
+        petCountEl.textContent = fmtPets(plateCounts[n]);
+      }
+
       function setImage(n) {
+        currentPlate = n;
         document.getElementById('potd-img').src = `images/dog-${n}.jpeg`;
         document.getElementById('potd-img').alt = `Wrangell, plate ${n}`;
         document.getElementById('plate-label').textContent = `Plate №${fmt2(n)}`;
         document.getElementById('plate-caption').textContent = captions[n - 1] || '';
+        showPetCount(n);
       }
 
       function renderDate() {
@@ -437,8 +506,59 @@
         setImage(next);
       });
 
+      // ---------- Pet the photo of the day ----------
+      const petBtn = document.getElementById('potd-pet');
+      const petRow = petBtn.parentElement;
+
+      function bumpCount() {
+        petCountEl.classList.remove('bump');
+        void petCountEl.offsetWidth;
+        petCountEl.classList.add('bump');
+      }
+
+      function spawnFloat(clientX, clientY) {
+        const rect = petRow.getBoundingClientRect();
+        const el = document.createElement('span');
+        el.className = 'pet-float';
+        el.textContent = '+1';
+        el.style.left = (clientX - rect.left) + 'px';
+        el.style.top = (clientY - rect.top) + 'px';
+        petRow.appendChild(el);
+        setTimeout(() => el.remove(), 900);
+      }
+
+      async function loadCounts() {
+        try {
+          const r = await fetch('/api/pets');
+          if (!r.ok) return;
+          const { plates } = await r.json();
+          plateCounts = plates || {};
+          showPetCount(currentPlate);
+        } catch {}
+      }
+
+      petBtn.addEventListener('click', async () => {
+        const n = currentPlate;
+        const rect = petBtn.getBoundingClientRect();
+        spawnFloat(rect.left + rect.width / 2, rect.top - 8);
+        try {
+          const r = await fetch('/api/pets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plate: n }),
+          });
+          if (!r.ok) return;
+          const data = await r.json();
+          if (typeof data.plateCount === 'number') {
+            plateCounts[n] = data.plateCount;
+            if (currentPlate === n) { showPetCount(n); bumpCount(); }
+          }
+        } catch {}
+      });
+
       renderDate();
       setImage(todayIndex());
+      loadCounts();
     })();
   </script>
 

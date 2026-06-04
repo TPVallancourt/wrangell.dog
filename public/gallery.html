@@ -309,6 +309,18 @@
     .sort-btn:hover { color: var(--ink); border-color: rgba(26, 20, 16, 0.6); }
     .sort-btn.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 
+    /* ---------- Per-plate pet count ---------- */
+    .cap-meta { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+    .plate-pets {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: var(--ink-muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .plate-pets.bump { animation: bump 0.45s ease-out; }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation: none !important; transition: none !important; }
     }
@@ -504,7 +516,16 @@
       width: 100%;
       margin-top: 16px;
       display: flex;
+      align-items: center;
       justify-content: center;
+      gap: 14px;
+    }
+    .lb-petcount {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      color: rgba(236, 228, 207, 0.75);
+      font-variant-numeric: tabular-nums;
     }
     .lb-pet {
       font-family: 'JetBrains Mono', monospace;
@@ -605,6 +626,7 @@
       <span class="sort-label">Sort:</span>
       <button class="sort-btn active" data-sort="newest">Newest</button>
       <button class="sort-btn" data-sort="oldest">Oldest</button>
+      <button class="sort-btn" data-sort="petted">Most petted</button>
       <button class="sort-btn" data-sort="random">Random</button>
     </div>
 
@@ -646,6 +668,7 @@
       </figcaption>
       <div class="lb-actions">
         <button class="lb-pet" id="lb-pet" type="button">&#128062;&nbsp;Pet Wrangell</button>
+        <span class="lb-petcount" id="lb-petcount"></span>
       </div>
     </figure>
   </div>
@@ -683,6 +706,8 @@
       const gallery = document.getElementById('gallery');
       const spanClasses = ['span-l', 'span-r', 'span-c'];
       let currentOrder = [];
+      let plateCounts = {};
+      const fmtPets = (n) => `🐾 ${(n || 0).toLocaleString('en-US')}`;
 
       const ordinals = ['one','two','three','four','five','six','seven','eight','nine','ten'];
       const altFor = (n) => `Wrangell, plate ${ordinals[n - 1] || n}`;
@@ -692,6 +717,10 @@
         const indices = Array.from({ length: total }, (_, i) => i + 1);
         if (sort === 'oldest') return indices;
         if (sort === 'newest') return indices.reverse();
+        if (sort === 'petted') {
+          // Most-petted first; ties broken newest-first.
+          return indices.sort((a, b) => (plateCounts[b] || 0) - (plateCounts[a] || 0) || b - a);
+        }
         // Fisher-Yates shuffle for random
         for (let i = indices.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
@@ -726,13 +755,21 @@
           frame.appendChild(img);
 
           const cap = document.createElement('figcaption');
+          const meta = document.createElement('span');
+          meta.className = 'cap-meta';
           const num = document.createElement('span');
           num.className = 'plate-num';
           num.textContent = `Plate №${fmt2(n)}`;
+          const pets = document.createElement('span');
+          pets.className = 'plate-pets';
+          pets.dataset.petsFor = n;
+          pets.textContent = fmtPets(plateCounts[n]);
+          meta.appendChild(num);
+          meta.appendChild(pets);
           const title = document.createElement('span');
           title.className = 'plate-title';
           title.textContent = captions[n - 1] || '';
-          cap.appendChild(num);
+          cap.appendChild(meta);
           cap.appendChild(title);
 
           fig.appendChild(frame);
@@ -792,22 +829,43 @@
         setTimeout(() => el.remove(), 900);
       }
 
-      async function sendPet() {
-        const r = await fetch('/api/pets', { method: 'POST' });
+      async function sendPet(plate) {
+        const r = await fetch('/api/pets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plate }),
+        });
         if (!r.ok) throw new Error('pet failed');
-        const { count } = await r.json();
-        setCount(count);
+        const data = await r.json();
+        setCount(data.count);
         bump();
-        return count;
+        return data;
       }
 
       async function loadCount() {
         try {
           const r = await fetch('/api/pets');
           if (!r.ok) return;
-          const { count } = await r.json();
+          const { count, plates } = await r.json();
           setCount(count);
+          plateCounts = plates || {};
+          refreshBadges();
         } catch {}
+      }
+
+      function refreshBadges() {
+        gallery.querySelectorAll('.plate-pets').forEach((el) => {
+          el.textContent = fmtPets(plateCounts[el.dataset.petsFor]);
+        });
+      }
+
+      function updatePlateBadge(n) {
+        const el = gallery.querySelector(`.plate-pets[data-pets-for="${n}"]`);
+        if (!el) return;
+        el.textContent = fmtPets(plateCounts[n]);
+        el.classList.remove('bump');
+        void el.offsetWidth;
+        el.classList.add('bump');
       }
 
       // ---------- Lightbox ----------
@@ -816,6 +874,7 @@
       const lbNum = document.getElementById('lb-num');
       const lbTitle = document.getElementById('lb-title');
       const lbPet = document.getElementById('lb-pet');
+      const lbPetCount = document.getElementById('lb-petcount');
       const lbActions = lbPet.parentElement;
       let lbN = null;
       let lastFocused = null;
@@ -826,6 +885,7 @@
         lbImg.alt = altFor(n);
         lbNum.textContent = `Plate №${fmt2(n)}`;
         lbTitle.textContent = captions[n - 1] || '';
+        lbPetCount.textContent = fmtPets(plateCounts[n]);
       }
 
       function openLightbox(n) {
@@ -857,9 +917,17 @@
       lb.addEventListener('click', (e) => { if (e.target === lb) closeLightbox(); });
 
       lbPet.addEventListener('click', async () => {
+        const n = lbN;
         const rect = lbActions.getBoundingClientRect();
         spawnFloat(lbActions, rect.left + rect.width / 2, rect.top - 8);
-        try { await sendPet(); } catch {}
+        try {
+          const data = await sendPet(n);
+          if (data && typeof data.plateCount === 'number') {
+            plateCounts[n] = data.plateCount;
+            if (lbN === n) lbPetCount.textContent = fmtPets(data.plateCount);
+            updatePlateBadge(n);
+          }
+        } catch {}
       });
 
       document.addEventListener('keydown', (e) => {
