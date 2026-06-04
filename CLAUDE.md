@@ -114,7 +114,12 @@ cache (`sw.js`), so neither is ever cached.
   `Authorization: Bearer <ADMIN_TOKEN>`. Returns 401 otherwise.
 - KV keys: `comments:<plate>` (JSON array, capped at `MAX_COMMENTS`, oldest dropped).
 
-**Admin moderation.** `ADMIN_TOKEN` is a Worker secret. In the gallery, visiting
+Comments render oldest-first (chronological). Because they are keyed only by plate, the
+**homepage photo-of-the-day** (`index.html`) has its own comments panel on the same endpoint:
+a note left on the day's photo appears on that plate in the gallery lightbox, and vice versa.
+
+**Admin moderation.** `ADMIN_TOKEN` is a Worker secret. In the gallery (and on the homepage),
+visiting
 `?admin=<token>` once stores it in `localStorage` and reveals a delete "×" on each comment;
 ordinary visitors never see it. Configure it per environment:
 ```

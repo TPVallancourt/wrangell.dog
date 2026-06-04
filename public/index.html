@@ -205,6 +205,90 @@
       to   { opacity: 0; transform: translate(-50%, calc(-50% - 48px)) scale(1.05); }
     }
 
+    /* ---------- Comments (shared per-plate with the gallery) ---------- */
+    .potd-comments {
+      max-width: 620px;
+      margin-top: 48px;
+    }
+    .potd-comments-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--rule);
+      margin-bottom: 18px;
+    }
+    .potd-comments-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+    .pc-comment { position: relative; padding-right: 22px; }
+    .pc-head {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .pc-name { color: var(--accent); }
+    .pc-time { color: var(--ink-muted); }
+    .pc-text {
+      font-size: 16px;
+      font-style: italic;
+      line-height: 1.5;
+      color: var(--ink);
+      font-variation-settings: "opsz" 14;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .pc-del {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: none;
+      border: none;
+      color: var(--ink-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 2px;
+      transition: color 0.2s;
+    }
+    .pc-del:hover { color: var(--accent); }
+    .pc-empty { font-style: italic; font-size: 15px; color: var(--ink-muted); }
+    .pc-form { display: flex; flex-direction: column; gap: 10px; }
+    .pc-name-input, .pc-text-input {
+      background: var(--bg-deep);
+      border: 1px solid rgba(26, 20, 16, 0.3);
+      color: var(--ink);
+      padding: 9px 12px;
+      width: 100%;
+    }
+    .pc-name-input { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.04em; }
+    .pc-text-input { font-family: 'Fraunces', Georgia, serif; font-size: 16px; resize: vertical; min-height: 56px; }
+    .pc-name-input::placeholder, .pc-text-input::placeholder { color: var(--ink-muted); }
+    .pc-name-input:focus, .pc-text-input:focus { outline: none; border-color: var(--accent); }
+    .pc-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    .pc-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .pc-error { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); }
+    .pc-submit {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink);
+      background: none;
+      border: 1px solid rgba(26, 20, 16, 0.3);
+      padding: 9px 18px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .pc-submit:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+    .pc-submit:disabled { opacity: 0.5; cursor: default; }
+
     /* ---------- Footer ---------- */
     footer {
       margin-top: 80px;
@@ -426,6 +510,20 @@
       </figure>
     </div>
 
+    <section class="potd-comments">
+      <p class="potd-comments-label">Words for Wrangell · Plate №<span id="pc-plate">—</span></p>
+      <div class="potd-comments-list" id="pc-list"></div>
+      <form class="pc-form" id="pc-form" autocomplete="off">
+        <input class="pc-name-input" id="pc-name" type="text" maxlength="40" placeholder="Name (optional)">
+        <input class="pc-hp" id="pc-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <textarea class="pc-text-input" id="pc-text" maxlength="500" rows="2" placeholder="Leave a word for Wrangell…"></textarea>
+        <div class="pc-row">
+          <span class="pc-error" id="pc-error" role="alert"></span>
+          <button class="pc-submit" id="pc-submit" type="submit">Post</button>
+        </div>
+      </form>
+    </section>
+
     <footer>
       <span>© MMXXVI · <a href="gallery.html">Wrangell.dog</a></span>
       <span><a href="#" id="shuffle-link">Different photo</a></span>
@@ -481,6 +579,10 @@
         document.getElementById('plate-label').textContent = `Plate №${fmt2(n)}`;
         document.getElementById('plate-caption').textContent = captions[n - 1] || '';
         showPetCount(n);
+        pcPlate.textContent = fmt2(n);
+        pcError.textContent = '';
+        pcText.value = '';
+        loadComments(n);
       }
 
       function renderDate() {
@@ -554,6 +656,128 @@
             if (currentPlate === n) { showPetCount(n); bumpCount(); }
           }
         } catch {}
+      });
+
+      // ---------- Comments (shared per-plate with the gallery) ----------
+      // Comments are keyed by plate in KV, so a note left here on the day's photo
+      // shows up on that same plate in the gallery, and vice versa.
+      let adminToken = '';
+      try {
+        const fromUrl = new URLSearchParams(location.search).get('admin');
+        if (fromUrl) localStorage.setItem('wrangell-admin', fromUrl);
+        adminToken = localStorage.getItem('wrangell-admin') || '';
+      } catch {}
+
+      const pcList = document.getElementById('pc-list');
+      const pcForm = document.getElementById('pc-form');
+      const pcName = document.getElementById('pc-name');
+      const pcText = document.getElementById('pc-text');
+      const pcHp = document.getElementById('pc-hp');
+      const pcError = document.getElementById('pc-error');
+      const pcSubmit = document.getElementById('pc-submit');
+      const pcPlate = document.getElementById('pc-plate');
+
+      function relTime(ts) {
+        const s = Math.floor((Date.now() - ts) / 1000);
+        if (s < 60) return 'just now';
+        const m = Math.floor(s / 60);
+        if (m < 60) return `${m}m ago`;
+        const h = Math.floor(m / 60);
+        if (h < 24) return `${h}h ago`;
+        const d = Math.floor(h / 24);
+        if (d < 30) return `${d}d ago`;
+        return new Date(ts).toLocaleDateString();
+      }
+
+      function commentEl(c) {
+        const wrap = document.createElement('div');
+        wrap.className = 'pc-comment';
+        const head = document.createElement('div');
+        head.className = 'pc-head';
+        const name = document.createElement('span');
+        name.className = 'pc-name';
+        name.textContent = c.name || 'Anonymous';
+        const time = document.createElement('span');
+        time.className = 'pc-time';
+        time.textContent = relTime(c.ts);
+        head.appendChild(name);
+        head.appendChild(time);
+        const text = document.createElement('div');
+        text.className = 'pc-text';
+        text.textContent = c.text;
+        wrap.appendChild(head);
+        wrap.appendChild(text);
+        if (adminToken) {
+          const del = document.createElement('button');
+          del.className = 'pc-del';
+          del.type = 'button';
+          del.textContent = '×';
+          del.setAttribute('aria-label', 'Delete comment');
+          del.addEventListener('click', () => deleteComment(c.id));
+          wrap.appendChild(del);
+        }
+        return wrap;
+      }
+
+      function renderComments(list) {
+        pcList.innerHTML = '';
+        if (!list.length) {
+          const p = document.createElement('p');
+          p.className = 'pc-empty';
+          p.textContent = 'No words yet. Be the first.';
+          pcList.appendChild(p);
+          return;
+        }
+        list.forEach((c) => pcList.appendChild(commentEl(c)));
+      }
+
+      async function loadComments(n) {
+        pcList.innerHTML = '<p class="pc-empty">Loading…</p>';
+        try {
+          const r = await fetch(`/api/comments?plate=${n}`);
+          if (!r.ok) throw new Error('load failed');
+          const { comments } = await r.json();
+          if (currentPlate !== n) return; // photo changed while loading
+          renderComments(comments || []);
+        } catch {
+          if (currentPlate === n) pcList.innerHTML = '<p class="pc-empty">Could not load comments.</p>';
+        }
+      }
+
+      async function deleteComment(id) {
+        if (!adminToken) return;
+        try {
+          const r = await fetch('/api/comments', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+            body: JSON.stringify({ plate: currentPlate, id }),
+          });
+          if (r.ok) loadComments(currentPlate);
+        } catch {}
+      }
+
+      pcForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = pcText.value.trim();
+        pcError.textContent = '';
+        if (!text) { pcError.textContent = 'Say something first.'; return; }
+        const plate = currentPlate;
+        pcSubmit.disabled = true;
+        try {
+          const r = await fetch('/api/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plate, name: pcName.value, text, website: pcHp.value }),
+          });
+          if (r.status === 429) { pcError.textContent = 'Easy there — try again in a moment.'; return; }
+          if (!r.ok) { pcError.textContent = 'Could not post. Try again.'; return; }
+          pcText.value = '';
+          if (currentPlate === plate) loadComments(plate);
+        } catch {
+          pcError.textContent = 'Network error.';
+        } finally {
+          pcSubmit.disabled = false;
+        }
       });
 
       renderDate();
