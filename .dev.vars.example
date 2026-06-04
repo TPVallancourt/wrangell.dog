@@ -1,4 +1,0 @@
-# Copy to .dev.vars for local dev, and set in prod with:
-#   npx wrangler secret put ADMIN_TOKEN
-# Admin token authorizes DELETE /api/comments (comment moderation).
-ADMIN_TOKEN="choose-a-long-random-string"

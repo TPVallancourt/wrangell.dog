@@ -124,7 +124,7 @@ visiting
 ordinary visitors never see it. Configure it per environment:
 ```
 npx wrangler secret put ADMIN_TOKEN          # production
-echo 'ADMIN_TOKEN="..."' > .dev.vars         # local dev (gitignored; see .dev.vars.example)
+echo 'ADMIN_TOKEN="..."' > .dev.vars         # local dev (gitignored)
 ```
 
 ## Commands
