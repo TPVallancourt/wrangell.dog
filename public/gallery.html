@@ -444,6 +444,32 @@
       from { opacity: 0; }
       to   { opacity: 1; }
     }
+
+    /* ---------- Install affordance ---------- */
+    .install-hint {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%) translateY(12px);
+      max-width: calc(100vw - 32px);
+      background: var(--ink);
+      color: var(--bg);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      padding: 12px 18px;
+      box-shadow: 0 8px 30px rgba(26, 20, 16, 0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 9500;
+    }
+    .install-hint.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+    }
+    .install-hint strong { color: var(--accent); font-weight: 500; }
   </style>
 </head>
 <body>
@@ -481,6 +507,7 @@
       <span>© MMXXVI · Wrangell.dog</span>
       <span><a href="classic.html">Classic view</a></span>
       <span><a href="#" id="announce-link">Announcement</a></span>
+      <span class="install-cta" id="install-slot" hidden><a href="#" id="install-link"><span class="ornament">⤓</span>Install app</a></span>
       <span><span class="ornament">❦</span>For the record</span>
     </footer>
   </div>
@@ -676,6 +703,67 @@
       });
 
       loadCount();
+    })();
+  </script>
+
+  <script>
+    /* Install affordance: native prompt where supported, iOS hint otherwise. */
+    (() => {
+      let deferred = null;
+      let slot = null;
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferred = e;
+        if (slot) slot.hidden = false;
+      });
+      window.addEventListener('appinstalled', () => {
+        if (slot) slot.hidden = true;
+        deferred = null;
+      });
+
+      const showHint = () => {
+        let hint = document.getElementById('install-hint');
+        if (!hint) {
+          hint = document.createElement('div');
+          hint.id = 'install-hint';
+          hint.className = 'install-hint';
+          hint.innerHTML = 'Tap <strong>Share</strong> &#x2191; then <strong>Add to Home Screen</strong>';
+          hint.addEventListener('click', () => hint.classList.remove('show'));
+          document.body.appendChild(hint);
+        }
+        requestAnimationFrame(() => hint.classList.add('show'));
+        clearTimeout(showHint._t);
+        showHint._t = setTimeout(() => hint.classList.remove('show'), 6000);
+      };
+
+      const wire = () => {
+        slot = document.getElementById('install-slot');
+        const link = document.getElementById('install-link');
+        if (!slot || !link) return;
+
+        const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+        if (standalone) { slot.hidden = true; return; }
+
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+          || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (deferred || isIOS) slot.hidden = false;
+
+        link.addEventListener('click', async (e) => {
+          e.preventDefault();
+          if (deferred) {
+            deferred.prompt();
+            await deferred.userChoice;
+            deferred = null;
+            slot.hidden = true;
+          } else if (isIOS) {
+            showHint();
+          }
+        });
+      };
+
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+      else wire();
     })();
   </script>
 

@@ -58,7 +58,7 @@ via the macOS Vision framework (`VNGenerateForegroundInstanceMaskRequest`) — n
 
 - **`favicon.png`** (48×48) — the bare transparent cutout; used as the browser tab icon.
 - **`apple-touch-icon.png`** (180×180), **`icon-192.png`**, **`icon-512.png`** — the head
-  composited onto the brand red (`#c43d1f`) by `scripts/make-app-icon.swift`. These are
+  composited onto a soft sage green (`#a3b18a`) by `scripts/make-app-icon.swift`. These are
   opaque app icons (iOS/Android mask transparency to black/circle, so app icons fill the
   square). The 192/512 are the maskable PWA icons referenced by the manifest.
 
@@ -68,9 +68,9 @@ To regenerate from a different source photo or crop:
 swift scripts/make-favicon.swift public/images/dog-29.jpeg /tmp/head.png 900 800 1250 1250
 sips -z 48 48 /tmp/head.png --out public/favicon.png
 # 2. opaque app icons on brand red (last arg = safe-zone inset fraction)
-swift scripts/make-app-icon.swift /tmp/head.png public/icon-512.png 512 c43d1f 0.14
+swift scripts/make-app-icon.swift /tmp/head.png public/icon-512.png 512 a3b18a 0.14
 sips -z 192 192 public/icon-512.png --out public/icon-192.png
-swift scripts/make-app-icon.swift /tmp/head.png public/apple-touch-icon.png 180 c43d1f 0.10
+swift scripts/make-app-icon.swift /tmp/head.png public/apple-touch-icon.png 180 a3b18a 0.10
 ```
 `make-favicon.swift` also accepts a trailing `pad` arg to center the crop on a transparent
 square canvas (side = longer dimension) — useful for a tall side-on head; dog-29's front-on
