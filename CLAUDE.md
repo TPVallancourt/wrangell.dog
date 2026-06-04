@@ -15,10 +15,13 @@ public/
   classic.html      # original minimal view (single dog-1.jpeg)
   captions.js       # window.WRANGELL_CAPTIONS array; index 0 = dog-1.jpeg
   images/           # dog-N.jpeg, referenced as images/dog-N.jpeg
+  favicon.png       # tab icon: transparent cutout of Wrangell's face (48x48)
+  apple-touch-icon.png  # 180x180 cutout for iOS home screen / high-DPI
 src/
   index.js          # Worker entry: /api/pets + asset passthrough
 scripts/
   caption-new-images.js  # generates missing captions via Claude vision; run by pre-commit hook
+  make-favicon.swift     # Vision-based background cutout for the favicon (see "Favicon")
 .githooks/
   pre-commit        # invokes caption-new-images.js before every commit
 wrangler.jsonc      # PETS KV binding, ASSETS binding, main = src/index.js
@@ -41,6 +44,25 @@ The homepage picks the plate via `(year*10000 + month*100 + day) % TOTAL + 1`, w
 ```
 git config core.hooksPath .githooks
 ```
+
+## Favicon
+
+The tab icon (`public/favicon.png` + `public/apple-touch-icon.png`) is a transparent cutout
+of Wrangell's face from `public/images/dog-29.jpeg` (a clean head-on portrait), referenced by `<link rel="icon">` /
+`<link rel="apple-touch-icon">` in all three HTML pages. The cutout is produced by
+`scripts/make-favicon.swift`, which uses the macOS Vision framework
+(`VNGenerateForegroundInstanceMaskRequest`) to drop the background — no installs, macOS only.
+
+To regenerate (e.g. from a different source photo or crop):
+```
+swift scripts/make-favicon.swift public/images/dog-29.jpeg /tmp/head.png 900 800 1250 1250
+sips -z 48 48   /tmp/head.png --out public/favicon.png
+sips -z 180 180 /tmp/head.png --out public/apple-touch-icon.png
+```
+The `x y w h` args are an optional crop rect (top-left origin, oriented-pixel space); omit
+them to keep the full subject, then inspect to find the head box. A trailing `pad` centers
+the crop on a transparent square canvas (side = the longer dimension) — useful for a tall
+side-on head, though dog-29's front-on head is already roughly square so no pad is needed.
 
 ## Commands
 
