@@ -207,8 +207,8 @@
 
     /* ---------- Comments (shared per-plate with the gallery) ---------- */
     .potd-comments {
-      max-width: 620px;
-      margin-top: 48px;
+      width: 100%;
+      margin-top: 44px;
     }
     .potd-comments-label {
       font-family: 'JetBrains Mono', monospace;
@@ -507,22 +507,21 @@
           <button class="potd-pet-btn" id="potd-pet" type="button">&#128062;&nbsp;Pet Wrangell</button>
           <span class="potd-pet-count" id="potd-pet-count"></span>
         </div>
+        <section class="potd-comments">
+          <p class="potd-comments-label">Words for Wrangell · Plate №<span id="pc-plate">—</span></p>
+          <div class="potd-comments-list" id="pc-list"></div>
+          <form class="pc-form" id="pc-form" autocomplete="off">
+            <input class="pc-name-input" id="pc-name" type="text" maxlength="40" placeholder="Name (optional)">
+            <input class="pc-hp" id="pc-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <textarea class="pc-text-input" id="pc-text" maxlength="500" rows="2" placeholder="Leave a word for Wrangell…"></textarea>
+            <div class="pc-row">
+              <span class="pc-error" id="pc-error" role="alert"></span>
+              <button class="pc-submit" id="pc-submit" type="submit">Post</button>
+            </div>
+          </form>
+        </section>
       </figure>
     </div>
-
-    <section class="potd-comments">
-      <p class="potd-comments-label">Words for Wrangell · Plate №<span id="pc-plate">—</span></p>
-      <div class="potd-comments-list" id="pc-list"></div>
-      <form class="pc-form" id="pc-form" autocomplete="off">
-        <input class="pc-name-input" id="pc-name" type="text" maxlength="40" placeholder="Name (optional)">
-        <input class="pc-hp" id="pc-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
-        <textarea class="pc-text-input" id="pc-text" maxlength="500" rows="2" placeholder="Leave a word for Wrangell…"></textarea>
-        <div class="pc-row">
-          <span class="pc-error" id="pc-error" role="alert"></span>
-          <button class="pc-submit" id="pc-submit" type="submit">Post</button>
-        </div>
-      </form>
-    </section>
 
     <footer>
       <span>© MMXXVI · <a href="gallery.html">Wrangell.dog</a></span>
