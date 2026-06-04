@@ -1,6 +1,5 @@
 const KEY = 'count';       // global running total (all plates)
 const PLATES_KEY = 'plates'; // JSON map of { "<plate>": <count> }
-const MAX_PLATE = 200;       // sanity bound on plate numbers
 
 async function readPlates(env) {
   try {
@@ -10,12 +9,12 @@ async function readPlates(env) {
   }
 }
 
-// Accepts a plate from a request body; returns an integer in [1, MAX_PLATE] or null.
+// Accepts a plate from a request body; returns a positive integer or null.
 async function plateFromBody(request) {
   try {
     const body = await request.json();
     const n = Number(body && body.plate);
-    if (Number.isInteger(n) && n >= 1 && n <= MAX_PLATE) return n;
+    if (Number.isInteger(n) && n >= 1) return n;
   } catch {}
   return null;
 }
