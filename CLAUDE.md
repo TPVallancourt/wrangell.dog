@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Static-first site deployed to Cloudflare Workers via Wrangler. No build step, no framework. `src/index.js` is a Worker that handles `/api/pets` (a KV-backed pet counter against the `PETS` binding) and falls through to `env.ASSETS.fetch(request)` for everything else. `wrangler.jsonc` sets `assets.directory` to `./public`, so everything under `public/` is publicly served and everything outside it (this file, `src/`, `wrangler.jsonc`, `README.md`) is project-only.
+Static-first site deployed to Cloudflare Workers via Wrangler. No build step, no framework. `src/index.js` is a Worker that handles `/api/pets` and `/api/comments` (both KV-backed against the `PETS` binding — see "Gallery API") and falls through to `env.ASSETS.fetch(request)` for everything else. `wrangler.jsonc` sets `assets.directory` to `./public`, so everything under `public/` is publicly served and everything outside it (this file, `src/`, `wrangler.jsonc`, `README.md`) is project-only.
 
 ## Layout
 
@@ -22,7 +22,7 @@ public/
   manifest.webmanifest  # PWA manifest (installable app metadata)
   sw.js             # service worker: offline cache + installability (see "Installable app")
 src/
-  index.js          # Worker entry: /api/pets + asset passthrough
+  index.js          # Worker entry: /api/pets + /api/comments + asset passthrough
 scripts/
   caption-new-images.js  # generates missing captions via Claude vision; run by pre-commit hook
   make-favicon.swift     # Vision-based background cutout for the favicon (see "Favicon")
@@ -87,6 +87,40 @@ fallback, and `/api/*` (the pet counter) is never cached. Standalone meta tags
 (`theme-color`, `apple-mobile-web-app-*`, `mobile-web-app-capable`) live in each page `<head>`.
 
 Bump `CACHE` in `sw.js` when changing cached assets so old caches are evicted on activate.
+
+## Gallery API (pets & comments)
+
+The gallery (`gallery.html`) is the interactive surface: clicking a plate opens a **lightbox**
+(full image, caption, prev/next, keyboard nav) that hosts both the pet button and comments.
+The Worker exposes two KV-backed JSON endpoints; `/api/*` is excluded from the service-worker
+cache (`sw.js`), so neither is ever cached.
+
+**`/api/pets`** — pet counts.
+- `GET` → `{ count, plates }` where `count` is the global total and `plates` is a
+  `{ "<plate>": <count> }` map.
+- `POST` with body `{ plate }` (integer 1–`MAX_PLATE`) → increments that plate and the total,
+  returns `{ count, plate, plateCount }`. A missing/invalid `plate` bumps only the total
+  (`{ count }`) for back-compat.
+- KV keys: `count` (string total) and `plates` (one JSON map). The gallery shows a per-plate
+  "🐾 N" badge, a "Most petted" sort, and a top-3 hall of fame.
+
+**`/api/comments`** — per-plate visitor notes.
+- `GET ?plate=N` → `{ comments: [{ id, name, text, ts }] }` (oldest first).
+- `POST` body `{ plate, name, text, website }` → stores a comment, returns `{ comment }`.
+  Guards: `text` 1–`MAX_TEXT` (required), `name` 0–`MAX_NAME` (optional → shows "Anonymous"),
+  control chars stripped, a `website` honeypot (any value → accepted silently, stored nothing),
+  and a per-IP fixed-window rate limit (`RL_MAX`/`RL_WINDOW`s via a `rl:<ip>` TTL key).
+- `DELETE` body `{ plate, id }` → admin-only comment removal; requires
+  `Authorization: Bearer <ADMIN_TOKEN>`. Returns 401 otherwise.
+- KV keys: `comments:<plate>` (JSON array, capped at `MAX_COMMENTS`, oldest dropped).
+
+**Admin moderation.** `ADMIN_TOKEN` is a Worker secret. In the gallery, visiting
+`?admin=<token>` once stores it in `localStorage` and reveals a delete "×" on each comment;
+ordinary visitors never see it. Configure it per environment:
+```
+npx wrangler secret put ADMIN_TOKEN          # production
+echo 'ADMIN_TOKEN="..."' > .dev.vars         # local dev (gitignored; see .dev.vars.example)
+```
 
 ## Commands
 
