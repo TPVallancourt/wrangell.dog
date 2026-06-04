@@ -16,12 +16,17 @@ public/
   captions.js       # window.WRANGELL_CAPTIONS array; index 0 = dog-1.jpeg
   images/           # dog-N.jpeg, referenced as images/dog-N.jpeg
   favicon.png       # tab icon: transparent cutout of Wrangell's face (48x48)
-  apple-touch-icon.png  # 180x180 cutout for iOS home screen / high-DPI
+  apple-touch-icon.png  # 180x180 app icon (head on brand red) for iOS home screen
+  icon-192.png      # PWA maskable app icon (192x192)
+  icon-512.png      # PWA maskable app icon (512x512)
+  manifest.webmanifest  # PWA manifest (installable app metadata)
+  sw.js             # service worker: offline cache + installability (see "Installable app")
 src/
   index.js          # Worker entry: /api/pets + asset passthrough
 scripts/
   caption-new-images.js  # generates missing captions via Claude vision; run by pre-commit hook
   make-favicon.swift     # Vision-based background cutout for the favicon (see "Favicon")
+  make-app-icon.swift    # composite a cutout onto a solid-color square app icon
 .githooks/
   pre-commit        # invokes caption-new-images.js before every commit
 wrangler.jsonc      # PETS KV binding, ASSETS binding, main = src/index.js
@@ -45,24 +50,43 @@ The homepage picks the plate via `(year*10000 + month*100 + day) % TOTAL + 1`, w
 git config core.hooksPath .githooks
 ```
 
-## Favicon
+## Favicon & app icons
 
-The tab icon (`public/favicon.png` + `public/apple-touch-icon.png`) is a transparent cutout
-of Wrangell's face from `public/images/dog-29.jpeg` (a clean head-on portrait), referenced by `<link rel="icon">` /
-`<link rel="apple-touch-icon">` in all three HTML pages. The cutout is produced by
-`scripts/make-favicon.swift`, which uses the macOS Vision framework
-(`VNGenerateForegroundInstanceMaskRequest`) to drop the background — no installs, macOS only.
+All icons derive from one transparent head cutout of Wrangell from
+`public/images/dog-29.jpeg` (a clean head-on portrait), produced by `scripts/make-favicon.swift`
+via the macOS Vision framework (`VNGenerateForegroundInstanceMaskRequest`) — no installs, macOS only.
 
-To regenerate (e.g. from a different source photo or crop):
+- **`favicon.png`** (48×48) — the bare transparent cutout; used as the browser tab icon.
+- **`apple-touch-icon.png`** (180×180), **`icon-192.png`**, **`icon-512.png`** — the head
+  composited onto a soft sage green (`#a3b18a`) by `scripts/make-app-icon.swift`. These are
+  opaque app icons (iOS/Android mask transparency to black/circle, so app icons fill the
+  square). The 192/512 are the maskable PWA icons referenced by the manifest.
+
+To regenerate from a different source photo or crop:
 ```
+# 1. transparent head cutout (x y w h = crop rect, top-left origin; omit to keep full subject)
 swift scripts/make-favicon.swift public/images/dog-29.jpeg /tmp/head.png 900 800 1250 1250
-sips -z 48 48   /tmp/head.png --out public/favicon.png
-sips -z 180 180 /tmp/head.png --out public/apple-touch-icon.png
+sips -z 48 48 /tmp/head.png --out public/favicon.png
+# 2. opaque app icons on brand red (last arg = safe-zone inset fraction)
+swift scripts/make-app-icon.swift /tmp/head.png public/icon-512.png 512 a3b18a 0.14
+sips -z 192 192 public/icon-512.png --out public/icon-192.png
+swift scripts/make-app-icon.swift /tmp/head.png public/apple-touch-icon.png 180 a3b18a 0.10
 ```
-The `x y w h` args are an optional crop rect (top-left origin, oriented-pixel space); omit
-them to keep the full subject, then inspect to find the head box. A trailing `pad` centers
-the crop on a transparent square canvas (side = the longer dimension) — useful for a tall
-side-on head, though dog-29's front-on head is already roughly square so no pad is needed.
+`make-favicon.swift` also accepts a trailing `pad` arg to center the crop on a transparent
+square canvas (side = longer dimension) — useful for a tall side-on head; dog-29's front-on
+head is already roughly square.
+
+## Installable app (PWA)
+
+The site is an installable Progressive Web App. `public/manifest.webmanifest` declares the
+app name, icons, and `display: standalone` (launches fullscreen, no browser chrome).
+`public/sw.js` is a service worker registered by every page; it makes the site installable
+(Chrome/Android/desktop show an "Install" prompt; iOS uses Share → Add to Home Screen) and
+adds offline support: photos are cached-first, the app shell is network-first with a cache
+fallback, and `/api/*` (the pet counter) is never cached. Standalone meta tags
+(`theme-color`, `apple-mobile-web-app-*`, `mobile-web-app-capable`) live in each page `<head>`.
+
+Bump `CACHE` in `sw.js` when changing cached assets so old caches are evicted on activate.
 
 ## Commands
 
