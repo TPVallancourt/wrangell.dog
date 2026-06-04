@@ -321,60 +321,6 @@
     }
     .plate-pets.bump { animation: bump 0.45s ease-out; }
 
-    /* ---------- Hall of fame ---------- */
-    .hall {
-      margin-top: -8px;
-      margin-bottom: 32px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--rule);
-      animation: rise 1.0s 0.36s ease-out both;
-    }
-    .hall[hidden] { display: none; }
-    .hall-label {
-      display: block;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--ink-muted);
-      margin-bottom: 12px;
-    }
-    .hall-items { display: flex; gap: 20px; flex-wrap: wrap; }
-    .hall-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      text-align: left;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .hall-item img {
-      width: 56px;
-      height: 56px;
-      object-fit: cover;
-      display: block;
-      filter: contrast(1.02) saturate(0.96);
-      box-shadow: inset 0 0 0 1px rgba(26, 20, 16, 0.08);
-    }
-    .hall-rank {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--accent);
-    }
-    .hall-meta { display: flex; flex-direction: column; gap: 3px; }
-    .hall-count {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: var(--ink);
-      font-variant-numeric: tabular-nums;
-    }
-    .hall-item:hover .hall-count { color: var(--accent); }
-
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation: none !important; transition: none !important; }
     }
@@ -684,11 +630,6 @@
       <button class="sort-btn" data-sort="random">Random</button>
     </div>
 
-    <div class="hall" id="hall" hidden>
-      <span class="hall-label">Hall of fame · most petted</span>
-      <div class="hall-items" id="hall-items"></div>
-    </div>
-
     <main id="gallery"></main>
 
     <footer>
@@ -909,7 +850,6 @@
           setCount(count);
           plateCounts = plates || {};
           refreshBadges();
-          renderHall();
         } catch {}
       }
 
@@ -927,51 +867,6 @@
         void el.offsetWidth;
         el.classList.add('bump');
       }
-
-      // ---------- Hall of fame (top 3 most-petted) ----------
-      const hall = document.getElementById('hall');
-      const hallItems = document.getElementById('hall-items');
-      const rankLabels = ['1st', '2nd', '3rd'];
-
-      function renderHall() {
-        const top = Object.keys(plateCounts)
-          .map((n) => [Number(n), plateCounts[n]])
-          .filter(([, c]) => c > 0)
-          .sort((a, b) => b[1] - a[1] || b[0] - a[0])
-          .slice(0, 3);
-        hallItems.innerHTML = '';
-        if (!top.length) { hall.hidden = true; return; }
-        top.forEach(([n, c], i) => {
-          const btn = document.createElement('button');
-          btn.className = 'hall-item';
-          btn.type = 'button';
-          btn.dataset.n = n;
-          btn.setAttribute('aria-label', `View plate ${fmt2(n)}, ${c} pets`);
-          const img = document.createElement('img');
-          img.src = `images/dog-${n}.jpeg`;
-          img.alt = altFor(n);
-          img.loading = 'lazy';
-          const meta = document.createElement('span');
-          meta.className = 'hall-meta';
-          const rank = document.createElement('span');
-          rank.className = 'hall-rank';
-          rank.textContent = `${rankLabels[i]} · №${fmt2(n)}`;
-          const count = document.createElement('span');
-          count.className = 'hall-count';
-          count.textContent = fmtPets(c);
-          meta.appendChild(rank);
-          meta.appendChild(count);
-          btn.appendChild(img);
-          btn.appendChild(meta);
-          hallItems.appendChild(btn);
-        });
-        hall.hidden = false;
-      }
-
-      hallItems.addEventListener('click', (e) => {
-        const item = e.target.closest('.hall-item');
-        if (item) openLightbox(Number(item.dataset.n));
-      });
 
       // ---------- Lightbox ----------
       const lb = document.getElementById('lightbox');
