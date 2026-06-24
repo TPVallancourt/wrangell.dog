@@ -824,12 +824,10 @@
   <script src="captions.js"></script>
   <script>
     (() => {
-      const SEEN_KEY = 'wrangell-nosework-2026';
       const modal = document.getElementById('celebration-modal');
 
       function dismiss() {
         modal.classList.add('hidden');
-        localStorage.setItem(SEEN_KEY, '1');
       }
 
       document.getElementById('modal-close-x').addEventListener('click', dismiss);
@@ -841,10 +839,6 @@
         e.preventDefault();
         modal.classList.remove('hidden');
       });
-
-      if (!localStorage.getItem(SEEN_KEY)) {
-        modal.classList.remove('hidden');
-      }
     })();
   </script>
   <script>

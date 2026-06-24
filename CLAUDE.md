@@ -36,14 +36,32 @@ Each HTML page is self-contained (inline CSS, loads Google Fonts directly). `ind
 
 ## Adding photos
 
-1. Drop the file as `public/images/dog-<N>.jpeg` (next sequential number).
-2. Commit — the pre-commit hook runs `scripts/caption-new-images.js`, which calls Claude vision to generate a caption and stages the updated `captions.js` automatically. Requires `ANTHROPIC_API_KEY` in the environment.
-3. To generate or preview captions without committing: `node scripts/caption-new-images.js`
-4. To override a generated caption, edit `public/captions.js` before the commit lands.
+Use the `/add-photos` skill — it handles the full workflow automatically:
+rename → caption (via Claude vision, no API key needed) → update `captions.js` → stage.
 
-Captions must read standalone — each one is shown solo on the homepage on its assigned day, so avoid "again", "also", "same", etc. Style: 2–5 words, no articles, wry and observational.
+### How it works
 
-The homepage picks the plate via `(year*10000 + month*100 + day) % TOTAL + 1`, where `TOTAL = captions.length`. Adding photos without captions will shift the deterministic daily rotation.
+1. Drop any number of image files into `public/images/` (any filename is fine).
+2. Run `/add-photos`. The skill will:
+   - Rename files to `dog-N.jpeg` sequentially from the next available number
+   - View each image and write a caption in the established style
+   - Present captions for your review before writing them
+   - Append entries to `captions.js` and update the header comment
+   - Stage images + `captions.js` for commit
+3. Review the proposed captions, tweak any you want changed, then commit.
+
+### Caption style
+
+Captions must read standalone — each is shown solo on the homepage on its assigned day.
+- 2–5 words, no articles, wry and observational
+- Avoid "again", "also", "same", or anything implying context from another photo
+- One strong specific detail beats a generic description
+
+### How photos are wired in
+
+- **Gallery** (`gallery.html`): uses `captions.length` as total plate count; generates `images/dog-${n}.jpeg` for n = 1..total. Images and captions must always be in sync.
+- **Homepage** (`index.html`): picks today's photo via `(year*10000 + month*100 + day) % captions.length + 1`. Rotation shifts when photos are added — expected.
+- **Pre-commit hook** (`.githooks/pre-commit`): runs `scripts/caption-new-images.js` (requires `ANTHROPIC_API_KEY`). When captions are already written by the skill, the hook exits cleanly without the key.
 
 **One-time hook setup** (already done on the main clone):
 ```

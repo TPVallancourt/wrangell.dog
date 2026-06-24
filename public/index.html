@@ -787,12 +787,10 @@
 
   <script>
     (() => {
-      const SEEN_KEY = 'wrangell-nosework-2026';
       const modal = document.getElementById('celebration-modal');
 
       function dismiss() {
         modal.classList.add('hidden');
-        localStorage.setItem(SEEN_KEY, '1');
       }
 
       window.showAnnouncement = function() {
@@ -808,10 +806,6 @@
         e.preventDefault();
         window.showAnnouncement();
       });
-
-      if (!localStorage.getItem(SEEN_KEY)) {
-        modal.classList.remove('hidden');
-      }
     })();
   </script>
 
