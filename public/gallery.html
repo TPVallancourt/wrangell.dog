@@ -605,6 +605,15 @@
     }
     .lb-cf-name::placeholder, .lb-cf-text::placeholder { color: rgba(236, 228, 207, 0.4); }
     .lb-cf-name:focus, .lb-cf-text:focus { outline: none; border-color: var(--accent); }
+    .lb-cf-name-wrap { position: relative; }
+    .lb-cf-name-wrap .lb-cf-name { padding-right: 32px; box-sizing: border-box; }
+    .lb-cf-name-clear {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: rgba(236, 228, 207, 0.4);
+      cursor: pointer; font-size: 16px; padding: 0 2px; line-height: 1;
+      transition: color 0.15s;
+    }
+    .lb-cf-name-clear:hover { color: var(--accent); }
     .lb-cf-website { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
     .lb-cf-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
     .lb-cf-error { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); }
@@ -807,7 +816,10 @@
         <p class="lb-comments-label">Words for Wrangell</p>
         <div class="lb-comments-list" id="lb-comments-list"></div>
         <form class="lb-comment-form" id="lb-comment-form" autocomplete="off">
-          <input class="lb-cf-name" id="lb-cf-name" type="text" maxlength="40" placeholder="Name (optional)">
+          <div class="lb-cf-name-wrap">
+            <input class="lb-cf-name" id="lb-cf-name" type="text" maxlength="40" placeholder="Name (optional)">
+            <button type="button" class="lb-cf-name-clear" id="lb-cf-name-clear" aria-label="Clear saved name" hidden>×</button>
+          </div>
           <input class="lb-cf-website" id="lb-cf-website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
           <textarea class="lb-cf-text" id="lb-cf-text" maxlength="500" rows="2" placeholder="Leave a word for Wrangell…"></textarea>
           <div class="lb-cf-row">
@@ -1034,7 +1046,18 @@
       const cfHp = document.getElementById('lb-cf-website');
       const cfError = document.getElementById('lb-cf-error');
       const cfSubmit = document.getElementById('lb-cf-submit');
+      const cfNameClear = document.getElementById('lb-cf-name-clear');
       let lbN = null;
+
+      try { cfName.value = localStorage.getItem('wrangell-name') || ''; } catch {}
+      cfNameClear.hidden = !cfName.value;
+      cfName.addEventListener('input', () => { cfNameClear.hidden = !cfName.value; });
+      cfNameClear.addEventListener('click', () => {
+        cfName.value = '';
+        cfNameClear.hidden = true;
+        try { localStorage.removeItem('wrangell-name'); } catch {}
+        cfName.focus();
+      });
       let lastFocused = null;
 
       function renderLightbox(n) {
@@ -1187,6 +1210,10 @@
           if (r.status === 429) { cfError.textContent = 'Easy there — try again in a moment.'; return; }
           if (!r.ok) { cfError.textContent = 'Could not post. Try again.'; return; }
           cfText.value = '';
+          try {
+            const n = cfName.value.trim();
+            if (n) localStorage.setItem('wrangell-name', n); else localStorage.removeItem('wrangell-name');
+          } catch {}
           if (lbN === plate) loadComments(plate);
         } catch {
           cfError.textContent = 'Network error.';

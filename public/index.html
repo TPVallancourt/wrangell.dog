@@ -271,6 +271,15 @@
     .pc-text-input { font-family: 'Fraunces', Georgia, serif; font-size: 16px; resize: vertical; min-height: 56px; }
     .pc-name-input::placeholder, .pc-text-input::placeholder { color: var(--ink-muted); }
     .pc-name-input:focus, .pc-text-input:focus { outline: none; border-color: var(--accent); }
+    .pc-name-wrap { position: relative; }
+    .pc-name-wrap .pc-name-input { padding-right: 32px; box-sizing: border-box; }
+    .pc-name-clear {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--ink-muted);
+      cursor: pointer; font-size: 16px; padding: 0 2px; line-height: 1;
+      transition: color 0.15s;
+    }
+    .pc-name-clear:hover { color: var(--accent); }
     .pc-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
     .pc-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
     .pc-error { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); }
@@ -511,7 +520,10 @@
           <p class="potd-comments-label">Words for Wrangell · Plate №<span id="pc-plate">—</span></p>
           <div class="potd-comments-list" id="pc-list"></div>
           <form class="pc-form" id="pc-form" autocomplete="off">
-            <input class="pc-name-input" id="pc-name" type="text" maxlength="40" placeholder="Name (optional)">
+            <div class="pc-name-wrap">
+              <input class="pc-name-input" id="pc-name" type="text" maxlength="40" placeholder="Name (optional)">
+              <button type="button" class="pc-name-clear" id="pc-name-clear" aria-label="Clear saved name" hidden>×</button>
+            </div>
             <input class="pc-hp" id="pc-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
             <textarea class="pc-text-input" id="pc-text" maxlength="500" rows="2" placeholder="Leave a word for Wrangell…"></textarea>
             <div class="pc-row">
@@ -674,7 +686,18 @@
       const pcHp = document.getElementById('pc-hp');
       const pcError = document.getElementById('pc-error');
       const pcSubmit = document.getElementById('pc-submit');
+      const pcNameClear = document.getElementById('pc-name-clear');
       const pcPlate = document.getElementById('pc-plate');
+
+      try { pcName.value = localStorage.getItem('wrangell-name') || ''; } catch {}
+      pcNameClear.hidden = !pcName.value;
+      pcName.addEventListener('input', () => { pcNameClear.hidden = !pcName.value; });
+      pcNameClear.addEventListener('click', () => {
+        pcName.value = '';
+        pcNameClear.hidden = true;
+        try { localStorage.removeItem('wrangell-name'); } catch {}
+        pcName.focus();
+      });
 
       function relTime(ts) {
         const s = Math.floor((Date.now() - ts) / 1000);
@@ -771,6 +794,10 @@
           if (r.status === 429) { pcError.textContent = 'Easy there — try again in a moment.'; return; }
           if (!r.ok) { pcError.textContent = 'Could not post. Try again.'; return; }
           pcText.value = '';
+          try {
+            const n = pcName.value.trim();
+            if (n) localStorage.setItem('wrangell-name', n); else localStorage.removeItem('wrangell-name');
+          } catch {}
           if (currentPlate === plate) loadComments(plate);
         } catch {
           pcError.textContent = 'Network error.';
