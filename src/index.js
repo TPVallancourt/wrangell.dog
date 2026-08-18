@@ -138,6 +138,33 @@ async function handleCaptions(request, env) {
   });
 }
 
+// GET /photos/<key> — uploaded photos, served from R2. Distinct from /images/, which is
+// static assets in the repo and is deliberately never routed through the Worker.
+async function handlePhoto(request, env) {
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    return new Response('Method not allowed', { status: 405 });
+  }
+  if (!env.PHOTOS) return new Response('Not found', { status: 404 });
+
+  const key = decodeURIComponent(new URL(request.url).pathname.slice('/photos/'.length));
+  if (!key || key.includes('..')) return new Response('Not found', { status: 404 });
+
+  // onlyIf lets R2 evaluate If-None-Match / If-Modified-Since; a failed precondition comes
+  // back as an object with no body, which is the 304.
+  const object = await env.PHOTOS.get(key, { onlyIf: request.headers });
+  if (!object) return new Response('Not found', { status: 404 });
+
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set('etag', object.httpEtag);
+  // Keys are never reused, so this can be immutable — which keeps repeat views on the edge
+  // cache instead of spending a Worker invocation each time.
+  headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+
+  if (!('body' in object)) return new Response(null, { status: 304, headers });
+  return new Response(request.method === 'HEAD' ? null : object.body, { headers });
+}
+
 async function handlePets(request, env) {
   if (request.method === 'GET') {
     const count = parseInt((await env.PETS.get(KEY)) || '0', 10);
@@ -217,6 +244,7 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === '/captions.js') return handleCaptions(request, env);
+    if (url.pathname.startsWith('/photos/')) return handlePhoto(request, env);
     if (url.pathname === '/api/pets') return handlePets(request, env);
     if (url.pathname === '/api/comments') return handleComments(request, env);
 
