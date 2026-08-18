@@ -25,6 +25,7 @@ src/
   index.js          # Worker entry: /api/pets + /api/comments + asset passthrough
 scripts/
   caption-new-images.js  # generates missing captions via Claude vision; run by pre-commit hook
+  downscale-images.sh    # caps photos at 2000px / ~q80 JPEG (see "Photo sizing")
   make-favicon.swift     # Vision-based background cutout for the favicon (see "Favicon")
   make-app-icon.swift    # composite a cutout onto a solid-color square app icon
 .githooks/
@@ -68,6 +69,22 @@ Captions must read standalone — each is shown solo on the homepage on its assi
 git config core.hooksPath .githooks
 ```
 
+## Photo sizing
+
+Photos are capped at **2000px on the long edge, progressive JPEG at quality 80** — a one-time
+pass took the set from 372MB to 44MB with no visible quality loss. Run `scripts/downscale-images.sh`
+after adding photos that came straight off a phone; it is idempotent, skips anything already
+within budget, and discards any re-encode that isn't smaller.
+
+Resizing uses `sips` (built into macOS). Encoding prefers `cjpeg` (`brew install jpeg-turbo`),
+which is roughly 2x more efficient than the `sips` encoder at equivalent visual quality; without
+cjpeg the script falls back to sips and just produces larger files. `cjpeg` cannot read sips' BMP
+output, so the script routes through an intermediate TGA.
+
+Note the source images carry no EXIF orientation tag, so resampling cannot rotate them. If that
+ever changes, check orientation in a browser after a run — not in a preview app, since previews
+honor EXIF even when the encoded pixels are wrong.
+
 ## Favicon & app icons
 
 All icons derive from one transparent head cutout of Wrangell from
@@ -83,7 +100,7 @@ via the macOS Vision framework (`VNGenerateForegroundInstanceMaskRequest`) — n
 To regenerate from a different source photo or crop:
 ```
 # 1. transparent head cutout (x y w h = crop rect, top-left origin; omit to keep full subject)
-swift scripts/make-favicon.swift public/images/dog-29.jpeg /tmp/head.png 900 800 1250 1250
+swift scripts/make-favicon.swift public/images/dog-29.jpeg /tmp/head.png 446 397 620 620
 sips -z 48 48 /tmp/head.png --out public/favicon.png
 # 2. opaque app icons on brand red (last arg = safe-zone inset fraction)
 swift scripts/make-app-icon.swift /tmp/head.png public/icon-512.png 512 a3b18a 0.14
