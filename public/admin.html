@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png">
+  <meta name="theme-color" content="#ece4cf">
+  <title>Admin · Wrangell.dog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ece4cf;
+      --bg-deep: #e3dabf;
+      --ink: #1a1410;
+      --ink-muted: #6b5d48;
+      --accent: #c43d1f;
+      --rule: rgba(26, 20, 16, 0.85);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { background: var(--bg); }
+
+    body {
+      font-family: 'Fraunces', Georgia, serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.5;
+      padding: 2rem 1.25rem 5rem;
+    }
+
+    .wrap { max-width: 60rem; margin: 0 auto; }
+
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      border-bottom: 2px solid var(--rule);
+      padding-bottom: 0.75rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    h1 { font-size: 1.9rem; font-weight: 600; letter-spacing: -0.02em; }
+    h2 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--ink-muted);
+      margin-bottom: 0.9rem;
+    }
+
+    .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+    .muted { color: var(--ink-muted); }
+
+    section {
+      border: 1px solid rgba(26, 20, 16, 0.25);
+      background: var(--bg-deep);
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--ink-muted);
+      margin-bottom: 0.3rem;
+    }
+
+    input[type="text"], input[type="password"], input[type="datetime-local"], input[type="file"], textarea {
+      width: 100%;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      padding: 0.5rem 0.6rem;
+      border: 1px solid rgba(26, 20, 16, 0.4);
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    input:focus, textarea:focus, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    button {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.5rem 0.9rem;
+      border: 1px solid var(--rule);
+      background: var(--ink);
+      color: var(--bg);
+      cursor: pointer;
+    }
+
+    button.ghost { background: transparent; color: var(--ink); }
+    button:disabled { opacity: 0.45; cursor: default; }
+
+    .row { display: flex; gap: 0.6rem; align-items: flex-end; flex-wrap: wrap; }
+    .row > .grow { flex: 1 1 14rem; }
+    .stack > * + * { margin-top: 0.85rem; }
+
+    .note { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; min-height: 1.2em; }
+    .note.err { color: var(--accent); }
+
+    /* ---- login ---- */
+    #login { max-width: 22rem; margin: 4rem auto 0; }
+
+    /* ---- upload queue ---- */
+    .queue { list-style: none; }
+    .queue li {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.7rem 0;
+      border-top: 1px solid rgba(26, 20, 16, 0.18);
+    }
+    .queue img, .plate-row img {
+      width: 72px; height: 72px; object-fit: cover;
+      border: 1px solid rgba(26, 20, 16, 0.3); flex: none;
+    }
+    .queue .fields { flex: 1; min-width: 0; }
+
+    /* ---- photo list ---- */
+    .plate-row {
+      display: flex; gap: 0.8rem; align-items: center;
+      padding: 0.6rem 0; border-top: 1px solid rgba(26, 20, 16, 0.18);
+    }
+    .plate-row .n {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+      color: var(--ink-muted); width: 3.5rem; flex: none;
+    }
+    .plate-row .grow { flex: 1; min-width: 0; }
+
+    /* ---- comments ---- */
+    .cmt { padding: 0.6rem 0; border-top: 1px solid rgba(26, 20, 16, 0.18); }
+    .cmt .head { display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; }
+    .cmt .who { font-weight: 600; }
+    .cmt .body { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 34rem) {
+      body { padding: 1.25rem 0.9rem 4rem; }
+      .plate-row { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- ---------- login ---------- -->
+    <div id="login" class="hidden">
+      <h1>Admin</h1>
+      <form id="login-form" class="stack" style="margin-top:1.25rem">
+        <div>
+          <label for="pw">Password</label>
+          <input type="password" id="pw" autocomplete="current-password" required>
+        </div>
+        <button type="submit">Sign in</button>
+        <p class="note" id="login-note"></p>
+      </form>
+    </div>
+
+    <!-- ---------- console ---------- -->
+    <div id="console" class="hidden">
+      <header>
+        <h1>Wrangell admin</h1>
+        <div class="row">
+          <a class="mono muted" href="/gallery">gallery ↗</a>
+          <button class="ghost" id="logout">Sign out</button>
+        </div>
+      </header>
+
+      <section>
+        <h2>Add photos</h2>
+        <div class="row">
+          <div class="grow">
+            <label for="files">JPEGs — resized to 2000px before upload</label>
+            <input type="file" id="files" accept="image/jpeg,image/*" multiple>
+          </div>
+        </div>
+        <ul class="queue" id="queue"></ul>
+        <div class="row" style="margin-top:0.9rem">
+          <button id="upload-all" disabled>Upload all</button>
+          <span class="note" id="upload-note"></span>
+        </div>
+      </section>
+
+      <section>
+        <h2>Bulletins</h2>
+        <p class="mono muted" style="margin-bottom:0.8rem">
+          Shown as a dismissible banner while inside its window. Leave the end empty for no expiry.
+        </p>
+        <div id="bulletins" class="stack"></div>
+        <div class="row" style="margin-top:0.9rem">
+          <button class="ghost" id="add-bulletin">Add bulletin</button>
+          <button id="save-bulletins">Save</button>
+          <span class="note" id="bulletin-note"></span>
+        </div>
+      </section>
+
+      <section>
+        <h2>Comments</h2>
+        <div id="comments"></div>
+        <p class="note muted" id="comments-note"></p>
+      </section>
+
+      <section>
+        <h2>Photos <span class="mono muted" id="photo-count"></span></h2>
+        <div class="row" style="margin-bottom:0.5rem">
+          <button class="ghost" id="export">Export manifest</button>
+          <span class="note muted">Photos are append-only — captions can change, plates never disappear.</span>
+        </div>
+        <div id="photos"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+      const loginView = $('login');
+      const consoleView = $('console');
+
+      const api = async (path, options) => {
+        const res = await fetch(path, { credentials: 'same-origin', ...options });
+        if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
+        return res.status === 204 ? null : res.json();
+      };
+
+      const setNote = (el, message, isError) => {
+        el.textContent = message;
+        el.classList.toggle('err', Boolean(isError));
+      };
+
+      // ---------- session ----------
+      async function boot() {
+        let admin = false;
+        try {
+          admin = (await api('/api/admin/session')).admin;
+        } catch {}
+        loginView.classList.toggle('hidden', admin);
+        consoleView.classList.toggle('hidden', !admin);
+        if (admin) loadAll();
+        else $('pw').focus();
+      }
+
+      $('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        setNote($('login-note'), '');
+        try {
+          await api('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: $('pw').value }),
+          });
+          $('pw').value = '';
+          boot();
+        } catch (err) {
+          setNote($('login-note'), /429/.test(err.message) ? 'Too many attempts — wait a few minutes.' : 'Wrong password.', true);
+        }
+      });
+
+      $('logout').addEventListener('click', async () => {
+        try { await api('/api/admin/logout', { method: 'POST' }); } catch {}
+        location.reload();
+      });
+
+      // ---------- shared state ----------
+      let photos = [];
+
+      async function loadAll() {
+        await Promise.all([loadPhotos(), loadBulletins(), loadComments()]);
+      }
+
+      // ---------- upload ----------
+      // Downscale in the browser so a 7MB phone photo arrives as ~400KB, matching what
+      // scripts/downscale-images.sh does to the committed set.
+      async function downscale(file, max = 2000, quality = 0.85) {
+        const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+        const w = Math.round(bitmap.width * scale);
+        const h = Math.round(bitmap.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+        bitmap.close();
+        return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+      }
+
+      let queue = [];
+
+      $('files').addEventListener('change', async (e) => {
+        const chosen = [...e.target.files];
+        e.target.value = '';
+        setNote($('upload-note'), `Preparing ${chosen.length}…`);
+        for (const file of chosen) {
+          try {
+            const blob = await downscale(file);
+            queue.push({ name: file.name, blob, caption: '', before: file.size });
+          } catch {
+            setNote($('upload-note'), `Could not read ${file.name}`, true);
+          }
+        }
+        setNote($('upload-note'), '');
+        renderQueue();
+      });
+
+      function renderQueue() {
+        const list = $('queue');
+        list.textContent = '';
+        queue.forEach((item, i) => {
+          const li = document.createElement('li');
+
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(item.blob);
+          img.alt = '';
+          li.appendChild(img);
+
+          const fields = document.createElement('div');
+          fields.className = 'fields';
+
+          const meta = document.createElement('div');
+          meta.className = 'mono muted';
+          meta.textContent = `${item.name} · ${Math.round(item.before / 1024)}KB → ${Math.round(item.blob.size / 1024)}KB`;
+          fields.appendChild(meta);
+
+          const cap = document.createElement('input');
+          cap.type = 'text';
+          cap.placeholder = 'Caption (2–5 words)';
+          cap.value = item.caption;
+          cap.style.marginTop = '0.35rem';
+          cap.addEventListener('input', () => { item.caption = cap.value; });
+          fields.appendChild(cap);
+
+          const drop = document.createElement('button');
+          drop.className = 'ghost';
+          drop.type = 'button';
+          drop.textContent = 'Remove';
+          drop.style.marginTop = '0.35rem';
+          drop.addEventListener('click', () => {
+            queue.splice(i, 1);
+            renderQueue();
+          });
+          fields.appendChild(drop);
+
+          li.appendChild(fields);
+          list.appendChild(li);
+        });
+        $('upload-all').disabled = queue.length === 0;
+      }
+
+      $('upload-all').addEventListener('click', async () => {
+        $('upload-all').disabled = true;
+        const total = queue.length;
+        let done = 0;
+        // Serial, so plate numbers are assigned in the order shown rather than racing.
+        while (queue.length) {
+          const item = queue[0];
+          setNote($('upload-note'), `Uploading ${done + 1} of ${total}…`);
+          try {
+            const form = new FormData();
+            form.append('file', item.blob, 'upload.jpeg');
+            form.append('caption', item.caption);
+            await api('/api/admin/photos', { method: 'POST', body: form });
+            queue.shift();
+            done++;
+            renderQueue();
+          } catch (err) {
+            setNote($('upload-note'), `Failed on ${item.name}: ${err.message}`, true);
+            $('upload-all').disabled = false;
+            return;
+          }
+        }
+        setNote($('upload-note'), `Uploaded ${done}. Captions with no text can be filled in below.`);
+        loadPhotos();
+      });
+
+      // ---------- photos ----------
+      async function loadPhotos() {
+        photos = (await api('/api/admin/photos')).photos;
+        $('photo-count').textContent = `${photos.length} plates`;
+        const host = $('photos');
+        host.textContent = '';
+        // Newest first — that's what you just uploaded and most likely want to edit.
+        [...photos].reverse().forEach((p) => host.appendChild(photoRow(p)));
+      }
+
+      function photoRow(p) {
+        const row = document.createElement('div');
+        row.className = 'plate-row';
+
+        const n = document.createElement('span');
+        n.className = 'n';
+        n.textContent = `№${String(p.n).padStart(2, '0')}`;
+        row.appendChild(n);
+
+        const img = document.createElement('img');
+        img.src = p.src;
+        img.alt = '';
+        img.loading = 'lazy';
+        row.appendChild(img);
+
+        const grow = document.createElement('div');
+        grow.className = 'grow';
+        const cap = document.createElement('input');
+        cap.type = 'text';
+        cap.value = p.caption || '';
+        cap.placeholder = 'No caption';
+        grow.appendChild(cap);
+        const note = document.createElement('span');
+        note.className = 'note';
+        grow.appendChild(note);
+        row.appendChild(grow);
+
+        const suggest = document.createElement('button');
+        suggest.className = 'ghost';
+        suggest.textContent = 'Suggest';
+        suggest.addEventListener('click', async () => {
+          suggest.disabled = true;
+          setNote(note, 'Thinking…');
+          try {
+            const { caption } = await api('/api/admin/caption', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ n: p.n }),
+            });
+            cap.value = caption;
+            setNote(note, 'Suggested — edit, then save.');
+          } catch (err) {
+            setNote(note, err.message, true);
+          } finally {
+            suggest.disabled = false;
+          }
+        });
+        row.appendChild(suggest);
+
+        const save = document.createElement('button');
+        save.textContent = 'Save';
+        save.addEventListener('click', async () => {
+          save.disabled = true;
+          setNote(note, 'Saving…');
+          try {
+            await api('/api/admin/photos', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ n: p.n, caption: cap.value }),
+            });
+            p.caption = cap.value;
+            setNote(note, 'Saved.');
+          } catch (err) {
+            setNote(note, err.message, true);
+          } finally {
+            save.disabled = false;
+          }
+        });
+        row.appendChild(save);
+
+        return row;
+      }
+
+      $('export').addEventListener('click', () => {
+        const text = JSON.stringify(photos, null, 2);
+        navigator.clipboard?.writeText(text).then(
+          () => setNote($('photo-count'), `${photos.length} plates · copied`),
+          () => window.prompt('Manifest JSON', text)
+        );
+      });
+
+      // ---------- bulletins ----------
+      const toLocalInput = (ms) => {
+        if (!ms) return '';
+        const d = new Date(ms - new Date().getTimezoneOffset() * 60000);
+        return d.toISOString().slice(0, 16);
+      };
+      const fromLocalInput = (value) => (value ? new Date(value).getTime() : 0);
+
+      let bulletins = [];
+
+      async function loadBulletins() {
+        bulletins = (await api('/api/admin/bulletins')).bulletins;
+        renderBulletins();
+      }
+
+      function renderBulletins() {
+        const host = $('bulletins');
+        host.textContent = '';
+        bulletins.forEach((b, i) => {
+          const box = document.createElement('div');
+          box.className = 'row';
+
+          const textWrap = document.createElement('div');
+          textWrap.className = 'grow';
+          const tl = document.createElement('label');
+          tl.textContent = 'Text';
+          const text = document.createElement('input');
+          text.type = 'text';
+          text.value = b.text || '';
+          text.addEventListener('input', () => { b.text = text.value; });
+          textWrap.append(tl, text);
+
+          const startWrap = document.createElement('div');
+          const sl = document.createElement('label');
+          sl.textContent = 'Starts';
+          const start = document.createElement('input');
+          start.type = 'datetime-local';
+          start.value = toLocalInput(b.startsAt);
+          start.addEventListener('input', () => { b.startsAt = fromLocalInput(start.value); });
+          startWrap.append(sl, start);
+
+          const endWrap = document.createElement('div');
+          const el = document.createElement('label');
+          el.textContent = 'Ends';
+          const end = document.createElement('input');
+          end.type = 'datetime-local';
+          end.value = toLocalInput(b.endsAt);
+          end.addEventListener('input', () => { b.endsAt = fromLocalInput(end.value); });
+          endWrap.append(el, end);
+
+          const drop = document.createElement('button');
+          drop.className = 'ghost';
+          drop.textContent = 'Remove';
+          drop.addEventListener('click', () => {
+            bulletins.splice(i, 1);
+            renderBulletins();
+          });
+
+          box.append(textWrap, startWrap, endWrap, drop);
+          host.appendChild(box);
+        });
+      }
+
+      $('add-bulletin').addEventListener('click', () => {
+        bulletins.push({ id: String(Date.now()), text: '', href: '', startsAt: Date.now(), endsAt: 0 });
+        renderBulletins();
+      });
+
+      $('save-bulletins').addEventListener('click', async () => {
+        setNote($('bulletin-note'), 'Saving…');
+        try {
+          bulletins = (await api('/api/admin/bulletins', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bulletins }),
+          })).bulletins;
+          renderBulletins();
+          setNote($('bulletin-note'), 'Saved — live within a minute.');
+        } catch (err) {
+          setNote($('bulletin-note'), err.message, true);
+        }
+      });
+
+      // ---------- comments ----------
+      function relTime(ts) {
+        const s = Math.floor((Date.now() - ts) / 1000);
+        if (s < 60) return 'just now';
+        if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+        if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+        if (s < 604800) return `${Math.floor(s / 86400)}d ago`;
+        return new Date(ts).toLocaleDateString();
+      }
+
+      async function loadComments() {
+        const { comments } = await api('/api/admin/comments');
+        const host = $('comments');
+        host.textContent = '';
+        if (!comments.length) {
+          setNote($('comments-note'), 'No comments yet.');
+          return;
+        }
+        setNote($('comments-note'), `${comments.length} most recent, newest first.`);
+        comments.forEach((c) => host.appendChild(commentRow(c)));
+      }
+
+      function commentRow(c) {
+        const box = document.createElement('div');
+        box.className = 'cmt';
+
+        const head = document.createElement('div');
+        head.className = 'head';
+
+        const who = document.createElement('span');
+        who.className = 'who';
+        who.textContent = c.name || 'Anonymous';
+
+        const meta = document.createElement('span');
+        meta.className = 'mono muted';
+        meta.textContent = `plate ${c.plate} · ${relTime(c.ts)}`;
+
+        const del = document.createElement('button');
+        del.className = 'ghost';
+        del.textContent = 'Delete';
+        del.style.marginLeft = 'auto';
+        del.addEventListener('click', async () => {
+          del.disabled = true;
+          try {
+            await api('/api/comments', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ plate: c.plate, id: c.id }),
+            });
+            box.remove();
+          } catch {
+            del.disabled = false;
+          }
+        });
+
+        head.append(who, meta, del);
+
+        const body = document.createElement('div');
+        body.className = 'body';
+        body.textContent = c.text;
+
+        box.append(head, body);
+        return box;
+      }
+
+      boot();
+    })();
+  </script>
+</body>
+</html>
