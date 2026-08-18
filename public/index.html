@@ -563,13 +563,25 @@
   <script src="captions.js"></script>
   <script>
     (() => {
-      const captions = window.WRANGELL_CAPTIONS || [];
-      const TOTAL = captions.length || 99;
+      // Photo manifest — see the matching block in gallery.html. Photos are append-only, so
+      // plate numbers are contiguous; src still comes from the manifest because uploaded
+      // photos live at /photos/ rather than images/.
+      const photos = Array.isArray(window.WRANGELL_PHOTOS) && window.WRANGELL_PHOTOS.length
+        ? window.WRANGELL_PHOTOS
+        : (window.WRANGELL_CAPTIONS || [])
+            .map((caption, i) => ({ n: i + 1, caption, src: `images/dog-${i + 1}.jpeg` }))
+            .filter((p) => p.caption);
+      const byN = new Map(photos.map((p) => [p.n, p]));
+      const plateNums = photos.map((p) => p.n);
+      const TOTAL = plateNums.length;
+      const srcFor = (n) => (byN.get(n) || {}).src || `images/dog-${n}.jpeg`;
+      const captionFor = (n) => (byN.get(n) || {}).caption || '';
 
       function todayIndex() {
+        if (!TOTAL) return null;
         const d = new Date();
         const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-        return (seed % TOTAL) + 1;
+        return plateNums[seed % TOTAL];
       }
 
       function fmt2(n) { return String(n).padStart(2, '0'); }
@@ -584,11 +596,12 @@
       }
 
       function setImage(n) {
+        if (n == null) return; // empty manifest — leave the placeholder markup in place
         currentPlate = n;
-        document.getElementById('potd-img').src = `images/dog-${n}.jpeg`;
+        document.getElementById('potd-img').src = srcFor(n);
         document.getElementById('potd-img').alt = `Wrangell, plate ${n}`;
         document.getElementById('plate-label').textContent = `Plate №${fmt2(n)}`;
-        document.getElementById('plate-caption').textContent = captions[n - 1] || '';
+        document.getElementById('plate-caption').textContent = captionFor(n);
         showPetCount(n);
         pcPlate.textContent = fmt2(n);
         pcError.textContent = '';
@@ -611,10 +624,11 @@
       document.getElementById('shuffle-link').addEventListener('click', (e) => {
         e.preventDefault();
         const daily = todayIndex();
-        let next;
-        do {
-          next = Math.floor(Math.random() * TOTAL) + 1;
-        } while (next === (shuffleIndex ?? daily));
+        const avoid = shuffleIndex ?? daily;
+        // Pick from the plates that actually exist, skipping the one already showing.
+        const pool = TOTAL > 1 ? plateNums.filter((n) => n !== avoid) : plateNums;
+        if (!pool.length) return;
+        const next = pool[Math.floor(Math.random() * pool.length)];
         shuffleIndex = next;
         setImage(next);
       });

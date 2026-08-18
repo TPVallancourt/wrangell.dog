@@ -6,6 +6,9 @@ const MAX_TEXT = 500;          // comment body length cap
 const MAX_NAME = 40;           // commenter name length cap
 const RL_WINDOW = 60;          // rate-limit window (seconds); KV TTL minimum is 60
 const RL_MAX = 10;             // max comments per IP per window
+const PHOTOS_KEY = 'photos';   // JSON array of { n, caption, src, ts }; append-only
+const BULLETINS_KEY = 'bulletins'; // JSON array of { id, text, href, startsAt, endsAt }
+const CAPTIONS_TTL = 60;       // seconds browsers/edge may reuse the generated captions.js
 
 // Returns a positive integer plate, or null.
 function toPlate(value) {
@@ -48,6 +51,36 @@ async function readComments(env, plate) {
   }
 }
 
+async function readPhotos(env) {
+  try {
+    const raw = await env.PETS.get(PHOTOS_KEY);
+    if (!raw) return null; // distinct from []: null means "not seeded, fall back to the asset"
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list : null;
+  } catch {
+    return null;
+  }
+}
+
+async function readBulletins(env) {
+  try {
+    return JSON.parse((await env.PETS.get(BULLETINS_KEY)) || '[]') || [];
+  } catch {
+    return [];
+  }
+}
+
+// The bulletin whose window covers now, most recently started first. Null when none.
+function activeBulletin(list, now) {
+  const live = list.filter((b) => {
+    const from = Number(b.startsAt) || 0;
+    const until = Number(b.endsAt) || Infinity;
+    return now >= from && now < until;
+  });
+  live.sort((a, b) => (Number(b.startsAt) || 0) - (Number(a.startsAt) || 0));
+  return live[0] || null;
+}
+
 // Fixed-window per-IP limiter; returns true when the caller is over the limit.
 async function rateLimited(env, ip) {
   const key = `rl:${ip}`;
@@ -59,6 +92,50 @@ async function rateLimited(env, ip) {
 function adminAuthorized(request, env) {
   const token = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
   return Boolean(env.ADMIN_TOKEN) && token === env.ADMIN_TOKEN;
+}
+
+// Serializes a value as a JS literal. U+2028/2029 are legal in JSON but were illegal in
+// JS string literals before ES2019, so escape them defensively.
+function jsLiteral(value) {
+  return JSON.stringify(value).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+}
+
+// GET /captions.js — generated from the KV manifest so uploads take effect without a deploy.
+// Emits WRANGELL_CAPTIONS (index 0 = plate 1) for back-compat alongside the authoritative
+// WRANGELL_PHOTOS. Falls back to the committed asset when KV is unseeded.
+//
+// The manifest is append-only: photos are never deleted, so plate numbers are contiguous and
+// permanently stable. That is what lets comments and pet counts key off the plate number.
+async function handleCaptions(request, env) {
+  const photos = await readPhotos(env);
+  if (!photos) return env.ASSETS.fetch(request);
+
+  const valid = photos.filter((p) => p && Number.isInteger(p.n) && p.n >= 1);
+  const maxN = valid.reduce((max, p) => (p.n > max ? p.n : max), 0);
+
+  // Indexed by plate number rather than array position, so a manifest that somehow has a
+  // hole degrades to a blank caption instead of silently shifting every later plate.
+  const captions = new Array(maxN).fill('');
+  for (const p of valid) captions[p.n - 1] = String(p.caption || '');
+
+  const manifest = valid
+    .map((p) => ({ n: p.n, caption: String(p.caption || ''), src: p.src || `images/dog-${p.n}.jpeg` }))
+    .sort((a, b) => a.n - b.n);
+
+  const bulletin = activeBulletin(await readBulletins(env), Date.now());
+
+  const body =
+    `// Generated from KV by the Worker. public/captions.js is the seed and offline fallback.\n` +
+    `window.WRANGELL_CAPTIONS = ${jsLiteral(captions)};\n` +
+    `window.WRANGELL_PHOTOS = ${jsLiteral(manifest)};\n` +
+    `window.WRANGELL_BULLETIN = ${jsLiteral(bulletin)};\n`;
+
+  return new Response(body, {
+    headers: {
+      'Content-Type': 'application/javascript; charset=utf-8',
+      'Cache-Control': `public, max-age=${CAPTIONS_TTL}`,
+    },
+  });
 }
 
 async function handlePets(request, env) {
@@ -139,6 +216,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    if (url.pathname === '/captions.js') return handleCaptions(request, env);
     if (url.pathname === '/api/pets') return handlePets(request, env);
     if (url.pathname === '/api/comments') return handleComments(request, env);
 

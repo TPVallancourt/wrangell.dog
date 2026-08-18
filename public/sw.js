@@ -46,9 +46,10 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return; // let cross-origin (fonts) pass through
   if (url.pathname.startsWith('/api/')) return;     // never cache the pet counter
+  if (url.pathname === '/admin') return;            // admin console is never cached
 
-  // Photos never change — cache-first.
-  if (url.pathname.startsWith('/images/')) {
+  // Photos never change — cache-first. /images/ is static, /photos/ is R2 via the Worker.
+  if (url.pathname.startsWith('/images/') || url.pathname.startsWith('/photos/')) {
     event.respondWith(
       caches.open(CACHE).then(async (cache) => {
         const hit = await cache.match(request);

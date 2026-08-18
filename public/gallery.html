@@ -855,8 +855,21 @@
   </script>
   <script>
     (() => {
-      const captions = window.WRANGELL_CAPTIONS || [];
-      const total = captions.length;
+      // Photo manifest. The Worker generates captions.js from KV and includes
+      // WRANGELL_PHOTOS; the committed fallback file only has WRANGELL_CAPTIONS, so derive
+      // an equivalent manifest from it. Photos are append-only and never deleted, so plate
+      // numbers are contiguous — but read src from the manifest, since uploaded photos live
+      // at /photos/ rather than images/.
+      const photos = Array.isArray(window.WRANGELL_PHOTOS) && window.WRANGELL_PHOTOS.length
+        ? window.WRANGELL_PHOTOS
+        : (window.WRANGELL_CAPTIONS || [])
+            .map((caption, i) => ({ n: i + 1, caption, src: `images/dog-${i + 1}.jpeg` }))
+            .filter((p) => p.caption);
+      const byN = new Map(photos.map((p) => [p.n, p]));
+      const plateNums = photos.map((p) => p.n);
+      const total = plateNums.length;
+      const srcFor = (n) => (byN.get(n) || {}).src || `images/dog-${n}.jpeg`;
+      const captionFor = (n) => (byN.get(n) || {}).caption || '';
       const gallery = document.getElementById('gallery');
       const spanClasses = ['span-l', 'span-r', 'span-c'];
       let currentOrder = [];
@@ -877,7 +890,7 @@
       const fmt2 = (n) => String(n).padStart(2, '0');
 
       function getOrder(sort) {
-        const indices = Array.from({ length: total }, (_, i) => i + 1);
+        const indices = plateNums.slice();
         if (sort === 'oldest') return indices;
         if (sort === 'newest') return indices.reverse();
         if (sort === 'petted') {
@@ -911,7 +924,7 @@
           const frame = document.createElement('div');
           frame.className = 'frame';
           const img = document.createElement('img');
-          img.src = `images/dog-${n}.jpeg`;
+          img.src = srcFor(n);
           img.alt = altFor(n);
           img.loading = 'lazy';
           img.decoding = 'async';
@@ -931,7 +944,7 @@
           meta.appendChild(pets);
           const title = document.createElement('span');
           title.className = 'plate-title';
-          title.textContent = captions[n - 1] || '';
+          title.textContent = captionFor(n);
           cap.appendChild(meta);
           cap.appendChild(title);
 
@@ -1062,10 +1075,10 @@
 
       function renderLightbox(n) {
         lbN = n;
-        lbImg.src = `images/dog-${n}.jpeg`;
+        lbImg.src = srcFor(n);
         lbImg.alt = altFor(n);
         lbNum.textContent = `Plate №${fmt2(n)}`;
-        lbTitle.textContent = captions[n - 1] || '';
+        lbTitle.textContent = captionFor(n);
         lbPetCount.textContent = fmtPets(plateCounts[n]);
         cfError.textContent = '';
         cfText.value = '';
