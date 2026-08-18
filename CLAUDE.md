@@ -48,8 +48,9 @@ Two ways in:
   path for a few photos off a phone. See "Admin console".
 - **The `/add-photos` skill** — the repo path, for a batch you want committed to git:
   rename → caption (via Claude vision, no API key needed) → update `captions.js` → stage.
-  Photos added this way need `scripts/seed-manifest.js` re-run (or the corresponding manifest
-  entries added) before they show up, since KV is the live source of truth.
+  Once KV is seeded it is the live source of truth, so photos added this way need their manifest
+  entries added too — re-running `scripts/seed-manifest.js` rebuilds from the repo but drops
+  anything uploaded through the console, so prefer the console for one-offs.
 
 ### How it works
 
@@ -165,7 +166,12 @@ window.WRANGELL_BULLETIN  // the currently-active bulletin, or null
 Both pages prefer `WRANGELL_PHOTOS` and fall back to deriving it from `WRANGELL_CAPTIONS`, so
 they work against either source.
 
-Seeding, one time per environment:
+**Seeding is automatic.** The first authenticated hit on `/api/admin/photos` bootstraps the KV
+manifest from `public/captions.js` (`ensurePhotos` in `src/index.js`, same derivation as
+`scripts/seed-manifest.js`). This is not just convenience: without it an upload against an empty
+manifest would assign plate 1 and replace the committed set.
+
+To seed explicitly anyway — e.g. to inspect the JSON first:
 ```
 node scripts/seed-manifest.js > /tmp/photos.json
 npx wrangler kv key put --binding PETS --remote photos --path /tmp/photos.json   # drop --remote for local dev

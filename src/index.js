@@ -349,6 +349,37 @@ async function readPhotoBytes(request, env, photo) {
   return res.ok ? res.arrayBuffer() : null;
 }
 
+// The admin endpoints must never see an empty manifest: an upload would then assign plate 1
+// and replace the committed set. So bootstrap from public/captions.js on first use — same
+// derivation as scripts/seed-manifest.js, just done lazily so deploying needs no seed step.
+// Read straight from ASSETS: fetching /captions.js would re-enter handleCaptions.
+async function ensurePhotos(request, env) {
+  const existing = await readPhotos(env);
+  if (existing && existing.length) return existing;
+
+  const res = await env.ASSETS.fetch(new Request(new URL('/captions.js', request.url)));
+  if (!res.ok) return existing || [];
+
+  const match = (await res.text()).match(/window\.WRANGELL_CAPTIONS\s*=\s*(\[[\s\S]*?\]);/);
+  if (!match) return existing || [];
+
+  let captions;
+  try {
+    captions = JSON.parse(match[1]);
+  } catch {
+    return existing || [];
+  }
+
+  const photos = captions.map((caption, i) => ({
+    n: i + 1,
+    caption: String(caption || ''),
+    src: `images/dog-${i + 1}.jpeg`,
+    ts: 0,
+  }));
+  await env.PETS.put(PHOTOS_KEY, JSON.stringify(photos));
+  return photos;
+}
+
 function sessionCookie(value, maxAge) {
   // Secure is honored on http://localhost too, so this works in `wrangler dev`.
   return `${SESSION_COOKIE}=${value}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${maxAge}`;
@@ -393,7 +424,7 @@ async function handleAdmin(request, env, url) {
   if (!(await adminAuthorized(request, env))) return new Response('Unauthorized', { status: 401 });
 
   if (route === 'photos') {
-    const photos = (await readPhotos(env)) || [];
+    const photos = await ensurePhotos(request, env);
 
     if (request.method === 'GET') return Response.json({ photos });
 
@@ -448,7 +479,7 @@ async function handleAdmin(request, env, url) {
 
     const body = await safeJson(request);
     const n = toPlate(body.n);
-    const photos = (await readPhotos(env)) || [];
+    const photos = await ensurePhotos(request, env);
     const photo = photos.find((p) => p.n === n);
     if (!photo) return new Response('No such plate', { status: 404 });
 
