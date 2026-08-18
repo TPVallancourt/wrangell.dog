@@ -19,6 +19,12 @@
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
+	"r2_buckets": [
+		{
+			"binding": "PHOTOS",
+			"bucket_name": "wrangell-photos"
+		}
+	],
 	"kv_namespaces": [
 		{
 			"binding": "PETS",

@@ -22,7 +22,7 @@ public/
   manifest.webmanifest  # PWA manifest (installable app metadata)
   sw.js             # service worker: offline cache + installability (see "Installable app")
 src/
-  index.js          # Worker entry: /captions.js + /api/pets + /api/comments + asset passthrough
+  index.js          # Worker entry: /captions.js, /photos/*, /api/*, asset passthrough
 scripts/
   caption-new-images.js  # generates missing captions via Claude vision; run by pre-commit hook
   seed-manifest.js       # one-time: builds the KV photo manifest from captions.js + images/
@@ -31,7 +31,7 @@ scripts/
   make-app-icon.swift    # composite a cutout onto a solid-color square app icon
 .githooks/
   pre-commit        # invokes caption-new-images.js before every commit
-wrangler.jsonc      # PETS KV binding, ASSETS binding, run_worker_first, main = src/index.js
+wrangler.jsonc      # PETS KV + PHOTOS R2 + ASSETS bindings, run_worker_first, main = src/index.js
 ```
 
 Each HTML page is self-contained (inline CSS, loads Google Fonts directly). `index.html` and `gallery.html` share a Fraunces + JetBrains Mono editorial design system; `classic.html` is deliberately plain.
@@ -160,6 +160,26 @@ Seeding, one time per environment:
 node scripts/seed-manifest.js > /tmp/photos.json
 npx wrangler kv key put --binding PETS --remote photos --path /tmp/photos.json   # drop --remote for local dev
 ```
+
+## Uploaded photos (`/photos/`, R2)
+
+Photos committed to the repo live in `public/images/` and are served directly by the assets
+binding. Photos uploaded through the admin console live in the **`wrangell-photos` R2 bucket**
+(binding `PHOTOS`) and are served by the Worker at `/photos/<key>` — a prefix with no static
+counterpart, so only genuinely dynamic images ever cost a Worker invocation.
+
+`handlePhoto` passes the request headers to R2 as `onlyIf`, so conditional requests return 304
+with no body, and sets `Cache-Control: public, max-age=31536000, immutable` (keys are never
+reused). Repeat views are served by the edge cache and the service worker rather than the
+Worker.
+
+One-time setup per environment:
+```
+npx wrangler r2 bucket create wrangell-photos
+```
+
+R2's free tier is 10 GB-month of storage, 1M Class A / 10M Class B operations, and no egress
+fees, so this stays free at this scale.
 
 ## Gallery API (pets & comments)
 
