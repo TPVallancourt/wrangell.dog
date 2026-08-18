@@ -8,7 +8,13 @@
 	},
 	"assets": {
 		"directory": "./public",
-		"binding": "ASSETS"
+		"binding": "ASSETS",
+		// Static assets normally win before the Worker runs. Only captions.js is listed here,
+		// so the Worker can generate it from KV. Never add "/images/*": static asset requests
+		// are free and unlimited, while Worker invocations are capped on the free plan.
+		"run_worker_first": [
+			"/captions.js"
+		]
 	},
 	"compatibility_flags": [
 		"nodejs_compat"
