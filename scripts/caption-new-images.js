@@ -42,8 +42,10 @@ async function generateCaption(imagePath, existingSamples) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
 
+  // The prompt and model live in src/caption.mjs so the Worker's /api/admin/caption endpoint
+  // and this script can't drift apart. Dynamic import because this file is CommonJS.
+  const { captionRequestBody, parseCaption } = await import('../src/caption.mjs');
   const imageData = fs.readFileSync(imagePath).toString('base64');
-  const sampleList = existingSamples.slice(-12).map(s => `- ${s}`).join('\n');
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -52,25 +54,11 @@ async function generateCaption(imagePath, existingSamples) {
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
     },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 30,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageData } },
-          {
-            type: 'text',
-            text: `Write a one-line caption for this dog photo in this exact style:\n${sampleList}\n\nRules: 2–5 words, no articles (a/an/the) unless essential, wry and observational, never sentimental, never mention the dog's name, no exclamation points. Reply with the caption only.`,
-          },
-        ],
-      }],
-    }),
+    body: JSON.stringify(captionRequestBody(imageData, existingSamples)),
   });
 
   if (!res.ok) throw new Error(`Anthropic API ${res.status}: ${await res.text()}`);
-  const data = await res.json();
-  return data.content[0].text.trim().replace(/^["']|["']$/g, '');
+  return parseCaption(await res.json());
 }
 
 async function main() {

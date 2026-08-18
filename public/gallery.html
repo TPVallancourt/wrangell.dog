@@ -740,6 +740,34 @@
       outline: 2px solid var(--accent);
       outline-offset: 3px;
     }
+  
+    /* ---- bulletin banner ---- */
+    .bulletin {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 1rem;
+      background: var(--ink);
+      color: var(--bg);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      line-height: 1.4;
+    }
+    .bulletin a { color: inherit; }
+    .bulletin .bulletin-text { flex: 1; }
+    .bulletin button {
+      flex: none;
+      background: none;
+      border: 0;
+      color: inherit;
+      font: inherit;
+      font-size: 1rem;
+      line-height: 1;
+      padding: 0.2rem 0.35rem;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+    .bulletin button:hover { opacity: 1; }
   </style>
 </head>
 <body>
@@ -834,6 +862,45 @@
   <button class="to-top" id="to-top" type="button" aria-label="Back to top">↑</button>
 
   <script src="captions.js"></script>
+  <script>
+    // Bulletin banner. window.WRANGELL_BULLETIN is set by the generated captions.js and is
+    // already filtered to the active window server-side; dismissal is per-bulletin so a new
+    // one reappears after an old one was dismissed.
+    (() => {
+      const b = window.WRANGELL_BULLETIN;
+      if (!b || !b.text) return;
+      const key = `wrangell-bulletin-${b.id}`;
+      try { if (localStorage.getItem(key)) return; } catch {}
+
+      const bar = document.createElement('div');
+      bar.className = 'bulletin';
+      bar.setAttribute('role', 'status');
+
+      const text = document.createElement('span');
+      text.className = 'bulletin-text';
+      if (b.href) {
+        const link = document.createElement('a');
+        link.href = b.href;
+        link.textContent = b.text;
+        text.appendChild(link);
+      } else {
+        text.textContent = b.text;
+      }
+
+      const close = document.createElement('button');
+      close.type = 'button';
+      close.setAttribute('aria-label', 'Dismiss');
+      close.textContent = '\u00d7';
+      close.addEventListener('click', () => {
+        bar.remove();
+        try { localStorage.setItem(key, '1'); } catch {}
+      });
+
+      bar.append(text, close);
+      document.body.prepend(bar);
+    })();
+  </script>
+
   <script>
     (() => {
       const modal = document.getElementById('celebration-modal');

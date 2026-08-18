@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Static-first site deployed to Cloudflare Workers via Wrangler. No build step, no framework. `src/index.js` is a Worker that handles `/api/pets` and `/api/comments` (both KV-backed against the `PETS` binding — see "Gallery API") and falls through to `env.ASSETS.fetch(request)` for everything else. `wrangler.jsonc` sets `assets.directory` to `./public`, so everything under `public/` is publicly served and everything outside it (this file, `src/`, `wrangler.jsonc`, `README.md`) is project-only.
+Static-first site deployed to Cloudflare Workers via Wrangler. No build step, no framework. `src/index.js` is a Worker that generates `/captions.js` from KV, serves uploaded photos from R2 at `/photos/*`, handles `/api/pets`, `/api/comments`, and `/api/admin/*`, and falls through to `env.ASSETS.fetch(request)` for everything else. `wrangler.jsonc` sets `assets.directory` to `./public`, so everything under `public/` is publicly served and everything outside it (this file, `src/`, `wrangler.jsonc`, `README.md`) is project-only.
+
+Content lives in two places by design. The 119 photos committed to `public/images/` are served as static assets — free and unlimited, never touching the Worker. Anything added later through the admin console lives in R2 and KV, so it goes live without a deploy. See "Photo manifest" and "Admin console".
 
 ## Layout
 
@@ -21,8 +23,10 @@ public/
   icon-512.png      # PWA maskable app icon (512x512)
   manifest.webmanifest  # PWA manifest (installable app metadata)
   sw.js             # service worker: offline cache + installability (see "Installable app")
+  admin.html        # password-protected console (see "Admin console")
 src/
   index.js          # Worker entry: /captions.js, /photos/*, /api/*, asset passthrough
+  caption.mjs       # shared caption prompt + model, used by the Worker and the CLI script
 scripts/
   caption-new-images.js  # generates missing captions via Claude vision; run by pre-commit hook
   seed-manifest.js       # one-time: builds the KV photo manifest from captions.js + images/
@@ -38,8 +42,14 @@ Each HTML page is self-contained (inline CSS, loads Google Fonts directly). `ind
 
 ## Adding photos
 
-Use the `/add-photos` skill — it handles the full workflow automatically:
-rename → caption (via Claude vision, no API key needed) → update `captions.js` → stage.
+Two ways in:
+
+- **`/admin` in a browser** — upload, caption, done. No deploy, no commit. This is the easy
+  path for a few photos off a phone. See "Admin console".
+- **The `/add-photos` skill** — the repo path, for a batch you want committed to git:
+  rename → caption (via Claude vision, no API key needed) → update `captions.js` → stage.
+  Photos added this way need `scripts/seed-manifest.js` re-run (or the corresponding manifest
+  entries added) before they show up, since KV is the live source of truth.
 
 ### How it works
 
@@ -218,6 +228,63 @@ ordinary visitors never see it. Configure it per environment:
 ```
 npx wrangler secret put ADMIN_TOKEN          # production
 echo 'ADMIN_TOKEN="..."' > .dev.vars         # local dev (gitignored)
+```
+
+## Admin console
+
+`/admin` (`public/admin.html`) is a password-protected console for everything that used to
+require a commit and a deploy: uploading photos, writing and editing captions, scheduling
+bulletins, and moderating comments.
+
+**Auth.** Sign in with the `ADMIN_TOKEN` password. `POST /api/admin/login` compares it in
+constant time (both sides are SHA-256 digested first, so neither content nor length leaks
+through timing) and sets an `HttpOnly; Secure; SameSite=Strict` cookie holding
+`<expiry>.<HMAC-SHA256 of the expiry>`, signed with `ADMIN_TOKEN`. Sessions are self-contained —
+there is no session store, and rotating `ADMIN_TOKEN` revokes every session at once. Login is
+rate limited to 8 attempts per IP per 5 minutes.
+
+`adminAuthorized()` accepts **either** that cookie or the older `Authorization: Bearer` header,
+so the existing `?admin=<token>` comment-delete flow on the gallery and homepage still works.
+
+> `Secure` cookies are honored on `http://localhost`, so this works under `wrangler dev` in a
+> browser. `curl` does *not* store Secure cookies over plain HTTP — when testing by hand, read
+> `Set-Cookie` off the login response and pass it back explicitly, or use the bearer token.
+
+**Routes** (all under `/api/admin/`, all gated except `login`, `logout`, and `session`):
+
+| Route | Methods | Purpose |
+|---|---|---|
+| `login` / `logout` / `session` | POST / POST / GET | sign in, sign out, `{ admin: bool }` probe |
+| `photos` | GET, POST, PATCH | list the manifest; upload a JPEG; edit one caption |
+| `caption` | POST `{ n }` | suggest a caption for a plate via the Claude vision API |
+| `bulletins` | GET, PUT | read and whole-list replace |
+| `comments` | GET | the rolling cross-plate feed, newest first |
+
+**Uploads** are downscaled in the browser to 2000px / q0.85 before sending, so a phone photo
+arrives around 400KB. The Worker assigns the next plate number (always highest + 1, never a
+reused number), writes `dog-N.jpeg` to R2, and appends to the manifest.
+
+**Captions** are suggested by `src/caption.mjs`, which owns the prompt and model for both the
+Worker endpoint and `scripts/caption-new-images.js`. Requires the `ANTHROPIC_API_KEY` secret;
+without it the endpoint returns 503 and the rest of the console still works. The suggestion
+lands in an editable field — nothing is saved until you press Save.
+
+**Bulletins** are `{ id, text, href, startsAt, endsAt }`; `endsAt: 0` means no expiry. The
+`/captions.js` handler filters to the active one and emits `window.WRANGELL_BULLETIN`, which
+both pages render as a dismissible banner (dismissal in `localStorage` under
+`wrangell-bulletin-<id>`). With the 60s cache TTL a bulletin goes live within about a minute.
+Note this is deliberately a banner rather than a popup — the announcement popup was removed in
+`93dc69a`.
+
+**Comment moderation** reads `comments:recent`, a rolling 200-entry cross-plate feed that
+`handleComments` maintains on every post and delete. That keeps the console at one KV read
+instead of one per plate. The feed is best-effort — a failure there never fails a visitor's
+comment, and `comments:<plate>` remains the source of truth.
+
+Secrets:
+```
+npx wrangler secret put ADMIN_TOKEN
+npx wrangler secret put ANTHROPIC_API_KEY
 ```
 
 ## Commands
