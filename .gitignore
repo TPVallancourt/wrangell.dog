@@ -6,3 +6,7 @@
 
 # macOS
 .DS_Store
+
+# Guestbook backups from scripts/export-guestbook.js. Ignored so routine exports don't
+# clutter the tree; `git add -f` the final one after the wedding if you want it kept.
+guestbook-exports/

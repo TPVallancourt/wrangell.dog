@@ -12,6 +12,18 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Wrangell">
   <title>Photo of the Day · Wrangell.dog</title>
+  <meta name="description" content="A new photograph of Wrangell every day. He is a very good boy.">
+  <link rel="canonical" href="https://wrangell.dog/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Wrangell.dog">
+  <meta property="og:url" content="https://wrangell.dog/">
+  <meta property="og:title" content="Photo of the Day · Wrangell.dog">
+  <meta property="og:description" content="A new photograph of Wrangell every day. He is a very good boy.">
+  <meta property="og:image" content="https://wrangell.dog/og-default.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Wrangell, a yellow Labrador, sitting and looking at the camera">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -539,6 +551,7 @@
       <span>© MMXXVI · <a href="gallery.html">Wrangell.dog</a></span>
       <span><a href="#" id="shuffle-link">Different photo</a></span>
       <span><a href="classic.html">Classic view</a></span>
+      <span><a href="wedding.html"><span class="ornament">❦</span>Wedding view</a></span>
       <span><a href="#" id="announce-link">Announcement</a></span>
       <span class="install-cta" id="install-slot" hidden><a href="#" id="install-link"><span class="ornament">⤓</span>Install app</a></span>
       <span><span class="ornament">❦</span>Updated daily</span>
@@ -555,7 +568,7 @@
         <button class="modal-dismiss" id="modal-dismiss">Congratulations, Wrangell ↗</button>
       </div>
       <div class="modal-img-wrap">
-        <img class="modal-img" src="images/dog-100.jpeg" alt="Wrangell with his nose work graduation certificate">
+        <img class="modal-img" src="images/resized/dog-100.jpeg" alt="Wrangell with his nose work graduation certificate">
       </div>
     </div>
   </div>
@@ -585,7 +598,7 @@
 
       function setImage(n) {
         currentPlate = n;
-        document.getElementById('potd-img').src = `images/dog-${n}.jpeg`;
+        document.getElementById('potd-img').src = `images/resized/dog-${n}.jpeg`;
         document.getElementById('potd-img').alt = `Wrangell, plate ${n}`;
         document.getElementById('plate-label').textContent = `Plate №${fmt2(n)}`;
         document.getElementById('plate-caption').textContent = captions[n - 1] || '';

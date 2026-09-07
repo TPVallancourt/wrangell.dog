@@ -1,3 +1,8 @@
 #!/bin/sh
 set -e
-node "$(git rev-parse --show-toplevel)/scripts/caption-new-images.js"
+ROOT="$(git rev-parse --show-toplevel)"
+# Derive the web-sized set from public/images/raw before captioning, so new photos are
+# both deployable and cheap to send to the vision API.
+node "$ROOT/scripts/resize-images.js"
+node "$ROOT/scripts/caption-new-images.js"
+git add "$ROOT/public/images/resized"

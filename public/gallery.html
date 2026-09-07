@@ -12,6 +12,18 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Wrangell">
   <title>The Best Dog · A Monograph</title>
+  <meta name="description" content="An ongoing monograph of one (1) very good boy, observed at close range.">
+  <link rel="canonical" href="https://wrangell.dog/gallery">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Wrangell.dog">
+  <meta property="og:url" content="https://wrangell.dog/gallery">
+  <meta property="og:title" content="The Best Dog · A Monograph">
+  <meta property="og:description" content="An ongoing monograph of one (1) very good boy, observed at close range.">
+  <meta property="og:image" content="https://wrangell.dog/og-default.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Wrangell, a yellow Labrador, sitting and looking at the camera">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -67,6 +79,31 @@
     }
     .masthead .vol { color: var(--ink); }
     .masthead .mark { color: var(--accent); margin-right: 8px; }
+
+    /* ---------- Wedding-week banner (revealed by script during the window) ---------- */
+    .wedding-banner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 8px 14px;
+      margin-top: 18px;
+      padding: 13px 16px;
+      border: 1px solid var(--accent);
+      text-decoration: none;
+      color: var(--ink);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      transition: background 0.2s, color 0.2s;
+    }
+    .wedding-banner[hidden] { display: none; }
+    .wedding-banner:hover { background: var(--accent); color: var(--bg); }
+    .wedding-banner .wb-mark { color: var(--accent); font-size: 13px; }
+    .wedding-banner:hover .wb-mark { color: var(--bg); }
+    .wedding-banner .wb-text { flex: 1 1 auto; }
+    .wedding-banner .wb-go { color: var(--accent); }
+    .wedding-banner:hover .wb-go { color: var(--bg); }
 
     /* ---------- Headline ---------- */
     .headline {
@@ -745,9 +782,15 @@
 <body>
   <div class="page">
     <div class="masthead">
-      <span class="vol">Vol. I · Iss. 01 · MMXXVI</span>
+      <span class="vol" id="vol-line">Vol. I · Iss. 01 · MMXXVI</span>
       <span><span class="mark">●</span>Wrangell.dog</span>
     </div>
+
+    <a class="wedding-banner" id="wedding-banner" href="wedding.html" hidden>
+      <span class="wb-mark">❦</span>
+      <span class="wb-text">My parents are getting married</span>
+      <span class="wb-go">Read the special edition →</span>
+    </a>
 
     <h1 class="headline">This <em>is</em> the<br>best dog<span class="period">.</span></h1>
 
@@ -793,7 +836,7 @@
         <button class="modal-dismiss" id="modal-dismiss">Congratulations, Wrangell ↗</button>
       </div>
       <div class="modal-img-wrap">
-        <img class="modal-img" src="images/dog-100.jpeg" alt="Wrangell with his nose work graduation certificate">
+        <img class="modal-img" src="images/resized/dog-100.jpeg" alt="Wrangell with his nose work graduation certificate">
       </div>
     </div>
   </div>
@@ -911,7 +954,7 @@
           const frame = document.createElement('div');
           frame.className = 'frame';
           const img = document.createElement('img');
-          img.src = `images/dog-${n}.jpeg`;
+          img.src = `images/resized/dog-${n}.jpeg`;
           img.alt = altFor(n);
           img.loading = 'lazy';
           img.decoding = 'async';
@@ -1062,7 +1105,7 @@
 
       function renderLightbox(n) {
         lbN = n;
-        lbImg.src = `images/dog-${n}.jpeg`;
+        lbImg.src = `images/resized/dog-${n}.jpeg`;
         lbImg.alt = altFor(n);
         lbNum.textContent = `Plate №${fmt2(n)}`;
         lbTitle.textContent = captions[n - 1] || '';
@@ -1336,6 +1379,23 @@
 
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
       else wire();
+    })();
+  </script>
+
+  <script>
+    /* Wedding takeover (live now .. 2026-09-23 Eastern) — surface the special edition.
+       Mirrors the window the Worker uses to serve /wedding at "/". Keep them in sync. */
+    (() => {
+      const START = Date.parse('2026-09-07T00:00:00-04:00');
+      const END = Date.parse('2026-09-24T00:00:00-04:00');
+      const now = Date.now();
+      // "?wedding=1" previews the banner before the window opens, matching the Worker.
+      const forced = new URLSearchParams(location.search).has('wedding');
+      if (!forced && (now < START || now >= END)) return;
+      const banner = document.getElementById('wedding-banner');
+      const vol = document.getElementById('vol-line');
+      if (banner) banner.hidden = false;
+      if (vol) vol.textContent = 'Vol. I · Wedding Edition · MMXXVI';
     })();
   </script>
 

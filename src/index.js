@@ -7,6 +7,39 @@ const MAX_NAME = 40;           // commenter name length cap
 const RL_WINDOW = 60;          // rate-limit window (seconds); KV TTL minimum is 60
 const RL_MAX = 10;             // max comments per IP per window
 
+// The wedding guestbook is a keepsake, so it plays by different rules than photo
+// comments. Two things would otherwise go wrong:
+//   1. MAX_COMMENTS drops the OLDEST entries to make room — backwards for a guestbook,
+//      where the first signatures matter most. Here the cap is far above any plausible
+//      guest count, and a full book refuses new writes rather than silently discarding.
+//   2. Guests on venue wifi all share one NAT'd IP, so RL_MAX would throttle the whole
+//      room after ten signatures. The guestbook gets its own, roomier budget under a
+//      separate key prefix so it never competes with ordinary comment traffic.
+const GUESTBOOK_PLATE = 919;
+const GUESTBOOK_MAX = 5000;    // ~3 MB of JSON worst case, well under KV's 25 MiB value limit
+const RL_GUESTBOOK_MAX = 60;   // signatures per shared IP per window
+
+// Signing is open only for the wedding weekend: 2026-09-19 and 2026-09-20 Eastern.
+// Reading stays open always, so guests can browse the book before and after. Holders of
+// ADMIN_TOKEN can sign any time, which is how you test the form outside the window.
+const GUESTBOOK_OPENS = Date.parse('2026-09-19T00:00:00-04:00');
+const GUESTBOOK_CLOSES = Date.parse('2026-09-21T00:00:00-04:00'); // exclusive: end of 9/20
+
+function guestbookOpen(now) {
+  return now >= GUESTBOOK_OPENS && now < GUESTBOOK_CLOSES;
+}
+
+// Wedding takeover: live now through 2026-09-23 in US Eastern (the window sits in EDT,
+// so the fixed -04:00 offset is exact). Turned on early — it was originally scoped to
+// the 16th. During it "/" serves the wedding page instead of photo-of-the-day;
+// "/?daily=1" opts back into the daily edition, and /wedding is reachable year-round.
+const WEDDING_START = Date.parse('2026-09-07T00:00:00-04:00');
+const WEDDING_END = Date.parse('2026-09-24T00:00:00-04:00');
+
+function inWeddingWeek(now) {
+  return now >= WEDDING_START && now < WEDDING_END;
+}
+
 // Returns a positive integer plate, or null.
 function toPlate(value) {
   const n = Number(value);
@@ -49,11 +82,12 @@ async function readComments(env, plate) {
 }
 
 // Fixed-window per-IP limiter; returns true when the caller is over the limit.
-async function rateLimited(env, ip) {
-  const key = `rl:${ip}`;
+// `prefix` keeps separate budgets from sharing a counter.
+async function rateLimited(env, ip, { prefix = 'rl', max = RL_MAX } = {}) {
+  const key = `${prefix}:${ip}`;
   const n = parseInt((await env.PETS.get(key)) || '0', 10) + 1;
   await env.PETS.put(key, String(n), { expirationTtl: RL_WINDOW });
-  return n > RL_MAX;
+  return n > max;
 }
 
 function adminAuthorized(request, env) {
@@ -105,8 +139,17 @@ async function handleComments(request, env) {
     const text = clean(body.text, MAX_TEXT);
     if (!text) return new Response('Empty comment', { status: 400 });
 
+    const isGuestbook = plate === GUESTBOOK_PLATE;
+
+    if (isGuestbook && !guestbookOpen(Date.now()) && !adminAuthorized(request, env)) {
+      return new Response('Guestbook closed', { status: 403 });
+    }
+
     const ip = request.headers.get('CF-Connecting-IP') || 'anon';
-    if (await rateLimited(env, ip)) return new Response('Too many comments', { status: 429 });
+    const limited = isGuestbook
+      ? await rateLimited(env, ip, { prefix: 'rlgb', max: RL_GUESTBOOK_MAX })
+      : await rateLimited(env, ip);
+    if (limited) return new Response('Too many comments', { status: 429 });
 
     const comment = {
       id: crypto.randomUUID(),
@@ -115,8 +158,19 @@ async function handleComments(request, env) {
       ts: Date.now(),
     };
     const list = await readComments(env, plate);
-    list.push(comment);
-    if (list.length > MAX_COMMENTS) list.splice(0, list.length - MAX_COMMENTS);
+
+    if (isGuestbook) {
+      // Refuse rather than evict — losing someone's signature silently is worse than
+      // telling them the book is full.
+      if (list.length >= GUESTBOOK_MAX) {
+        return new Response('Guestbook is full', { status: 409 });
+      }
+      list.push(comment);
+    } else {
+      list.push(comment);
+      if (list.length > MAX_COMMENTS) list.splice(0, list.length - MAX_COMMENTS);
+    }
+
     await env.PETS.put(COMMENTS_PREFIX + plate, JSON.stringify(list));
     return Response.json({ comment });
   }
@@ -141,6 +195,20 @@ export default {
 
     if (url.pathname === '/api/pets') return handlePets(request, env);
     if (url.pathname === '/api/comments') return handleComments(request, env);
+
+    // "/?wedding=1" previews the takeover before it goes live; "/?daily=1" opts out of it
+    // while it is. Neither is needed to reach the page itself — /wedding always works.
+    if (url.pathname === '/' || url.pathname === '/index.html') {
+      const forced = url.searchParams.has('wedding');
+      const optedOut = url.searchParams.has('daily');
+      if (forced || (inWeddingWeek(Date.now()) && !optedOut)) {
+        // Clean URL, not "/wedding.html" — the .html form 307-redirects, which would
+        // bounce the visitor off "/" and show the redirect in the address bar.
+        const target = new URL(url);
+        target.pathname = '/wedding';
+        return env.ASSETS.fetch(new Request(target, request));
+      }
+    }
 
     return env.ASSETS.fetch(request);
   },
