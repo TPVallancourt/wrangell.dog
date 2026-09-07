@@ -7,11 +7,11 @@ const MAX_NAME = 40;           // commenter name length cap
 const RL_WINDOW = 60;          // rate-limit window (seconds); KV TTL minimum is 60
 const RL_MAX = 10;             // max comments per IP per window
 
-// Wedding week: 2026-09-16 through 2026-09-23 in US Eastern. The whole window sits in
-// EDT, so the fixed -04:00 offset is exact. During it "/" serves the wedding page
-// instead of photo-of-the-day; "/?daily=1" opts back into the daily edition, and
-// /wedding stays directly reachable year-round.
-const WEDDING_START = Date.parse('2026-09-16T00:00:00-04:00');
+// Wedding takeover: live now through 2026-09-23 in US Eastern (the window sits in EDT,
+// so the fixed -04:00 offset is exact). Turned on early — it was originally scoped to
+// the 16th. During it "/" serves the wedding page instead of photo-of-the-day;
+// "/?daily=1" opts back into the daily edition, and /wedding is reachable year-round.
+const WEDDING_START = Date.parse('2026-09-07T00:00:00-04:00');
 const WEDDING_END = Date.parse('2026-09-24T00:00:00-04:00');
 
 function inWeddingWeek(now) {

@@ -169,9 +169,10 @@ Tomatoes fall down the page because that is the wedding's theme — they are dra
 gradient body plus a clip-path calyx on `.tomato::before`), not images, and the whole layer
 is skipped for `prefers-reduced-motion` visitors.
 
-**Routing.** `src/index.js` serves `/wedding` at `/` for the window **2026-09-16 through
+**Routing.** `src/index.js` serves `/wedding` at `/` for the window **now through
 2026-09-23** (US Eastern; the whole window is EDT, so the fixed `-04:00` offset in
-`WEDDING_START`/`WEDDING_END` is exact). This requires `assets.run_worker_first` in
+`WEDDING_START`/`WEDDING_END` is exact). The takeover was originally scoped to start on
+the 16th and was turned on early. This requires `assets.run_worker_first` in
 `wrangler.jsonc` — without it Cloudflare serves `public/index.html` directly and the Worker
 never runs. `run_worker_first` is scoped to `["/", "/index.html"]` so every other path keeps
 the fast direct-to-asset path.

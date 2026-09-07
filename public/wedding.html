@@ -367,6 +367,25 @@
 
     /* ---------- Guestbook ---------- */
     .guestbook { margin-top: 72px; }
+    /* Chip heading, borrowing the countdown's treatment — this is the one thing on the
+       page we actually want visitors to do, so it gets more weight than a section label. */
+    .gb-heading {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .gb-chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--bg);
+      background: var(--accent);
+      padding: 11px 18px;
+      white-space: nowrap;
+    }
+    .gb-rule { flex: 1 1 auto; height: 1px; background: var(--rule); }
     .gb-intro {
       font-size: 16px;
       font-style: italic;
@@ -610,7 +629,10 @@
     </section>
 
     <section class="guestbook">
-      <p class="section-label">Sign the guestbook</p>
+      <div class="gb-heading">
+        <span class="gb-chip">Sign the guestbook</span>
+        <span class="gb-rule"></span>
+      </div>
       <p class="gb-intro">
         Leave a note for Vaughn, Emily, and the ring bearer. It stays here for good.
       </p>
