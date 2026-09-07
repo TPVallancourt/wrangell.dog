@@ -513,7 +513,13 @@
       pointer-events: none;
       overflow: hidden;
       z-index: 0;
+      opacity: 1;
+      transition: opacity 0.7s ease;
     }
+    /* They are a welcome flourish, not wallpaper — once you start reading, they leave.
+       Pausing the animation as well keeps them off the compositor while hidden. */
+    #tomatoes.dimmed { opacity: 0; }
+    #tomatoes.dimmed .tomato { animation-play-state: paused; }
     .tomato {
       position: absolute;
       top: -10vh;
@@ -953,7 +959,9 @@
     (() => {
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       const host = document.getElementById('tomatoes');
-      const COUNT = window.innerWidth < 760 ? 26 : 48;
+      // Deliberately sparse, especially on phones where the viewport is small enough that
+      // a couple of dozen read as a swarm rather than a garnish.
+      const COUNT = window.innerWidth < 760 ? 10 : 26;
 
       for (let i = 0; i < COUNT; i++) {
         const t = document.createElement('span');
@@ -972,6 +980,20 @@
         t.style.filter = 'brightness(' + (0.86 + Math.random() * 0.28).toFixed(2) + ')';
         host.appendChild(t);
       }
+
+      // Clear the layer out as soon as the visitor starts reading, and bring it back if
+      // they return to the top. Passive listener that only toggles a class, so it costs
+      // nothing on the scroll path.
+      const FADE_AFTER = 140; // px scrolled
+      let dimmed = false;
+      const sync = () => {
+        const next = window.scrollY > FADE_AFTER;
+        if (next === dimmed) return;
+        dimmed = next;
+        host.classList.toggle('dimmed', dimmed);
+      };
+      window.addEventListener('scroll', sync, { passive: true });
+      sync();
     })();
   </script>
 
