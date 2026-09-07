@@ -18,7 +18,6 @@ public/
   images/
     raw/            # dog-N.jpeg originals (archive; never referenced by a page)
     resized/        # dog-N.jpeg at <=1600px — what every page actually loads
-    wedding-hero.jpeg   # cropped hero for wedding.html (derived from raw/dog-160)
   og-default.jpg    # 1200x630 share card for the everyday pages
   og-wedding.jpg    # 1200x630 share card for wedding.html
   favicon.png       # tab icon: transparent cutout of Wrangell's face (48x48)
