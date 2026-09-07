@@ -191,10 +191,27 @@ same window, and also honours `?wedding=1`. Keep the dates in the two files in s
 "got married" at **midnight Eastern on 2026-09-20** (the `AFTER` constant in `wedding.html`).
 The page re-checks hourly, so a tab left open overnight flips on its own.
 
-**Guestbook.** Reuses `/api/comments` on reserved **plate 919** — no Worker change was needed,
-since `toPlate` accepts any integer ≥ 1 and the gallery only ever renders plates 1..160.
-Admin deletion works exactly as elsewhere (`?admin=<token>`). The "pet the ring bearer"
-button increments **plate 160**, so it also feeds the gallery's hall of fame.
+**Guestbook.** Reuses `/api/comments` on reserved **plate 919**, since `toPlate` accepts any
+integer ≥ 1 and the gallery only ever renders plates 1..161. Admin deletion works exactly as
+elsewhere (`?admin=<token>`). The "pet the ring bearer" button increments **plate 161**, the
+hero, so it also feeds the gallery's hall of fame.
+
+It does *not* behave like ordinary photo comments, because a guestbook is a keepsake:
+
+- **Signing is open only for the wedding weekend** — 2026-09-19 and 2026-09-20 Eastern
+  (`GUESTBOOK_OPENS`/`GUESTBOOK_CLOSES`). Reading is always open. Enforced in the Worker
+  and mirrored by `renderGuestbookState()` in `wedding.html`; keep the two windows in sync.
+  **Holders of `ADMIN_TOKEN` can sign any time**, which is how you test the form off-window.
+- **Entries are never silently evicted.** Ordinary plates cap at `MAX_COMMENTS` (200) and drop
+  the oldest; the guestbook caps at `GUESTBOOK_MAX` (5000) and returns **409** when full, so a
+  signature is never lost to make room.
+- **Its own rate-limit budget.** Wedding guests share one NAT'd IP on venue wifi, so the normal
+  `RL_MAX` of 10/minute would throttle the whole room. The guestbook gets `RL_GUESTBOOK_MAX`
+  (60/minute) under a separate `rlgb:` key prefix.
+
+**Back it up.** The entire book is one KV value, so run `node scripts/export-guestbook.js`
+after the wedding. It writes a restorable `.json` and a readable `.txt` transcript into
+`guestbook-exports/` (gitignored — `git add -f` the final one if you want it in the repo).
 
 ## Commands
 

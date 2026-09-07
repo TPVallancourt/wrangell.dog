@@ -386,6 +386,17 @@
       white-space: nowrap;
     }
     .gb-rule { flex: 1 1 auto; height: 1px; background: var(--rule); }
+    .gb-closed {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      line-height: 1.7;
+      color: var(--ink-muted);
+      border: 1px dashed rgba(26, 20, 16, 0.32);
+      padding: 16px 18px;
+    }
+    .gb-closed strong { color: var(--accent); font-weight: 500; }
+    .gb-closed[hidden], .gb-form[hidden] { display: none; }
     .gb-intro {
       font-size: 16px;
       font-style: italic;
@@ -630,13 +641,14 @@
 
     <section class="guestbook">
       <div class="gb-heading">
-        <span class="gb-chip">Sign the guestbook</span>
+        <span class="gb-chip" id="gb-chip">Sign the guestbook</span>
         <span class="gb-rule"></span>
       </div>
-      <p class="gb-intro">
+      <p class="gb-intro" id="gb-intro">
         Leave a note for Vaughn, Emily, and the ring bearer. It stays here for good.
       </p>
       <div class="gb-list" id="gb-list"></div>
+      <p class="gb-closed" id="gb-closed" hidden></p>
       <form class="gb-form" id="gb-form" autocomplete="off">
         <div class="gb-name-wrap">
           <input class="gb-name-input" id="gb-name" type="text" maxlength="40" placeholder="Your name (optional)">
@@ -771,6 +783,39 @@
       const gbError = document.getElementById('gb-error');
       const gbSubmit = document.getElementById('gb-submit');
       const gbNameClear = document.getElementById('gb-name-clear');
+      const gbClosed = document.getElementById('gb-closed');
+      const gbChip = document.getElementById('gb-chip');
+      const gbIntro = document.getElementById('gb-intro');
+
+      // Signing is open for the wedding weekend only. Mirrors the window the Worker
+      // enforces in src/index.js — keep the two in sync. Reading is always open.
+      const GB_OPENS = Date.parse('2026-09-19T00:00:00-04:00');
+      const GB_CLOSES = Date.parse('2026-09-21T00:00:00-04:00');
+
+      let canSignNow = false;
+
+      function renderGuestbookState() {
+        const now = Date.now();
+        // Admins can sign any time, matching the Worker — that is how the form gets
+        // tested outside the weekend.
+        const canSign = (now >= GB_OPENS && now < GB_CLOSES) || Boolean(adminToken);
+        canSignNow = canSign;
+        gbForm.hidden = !canSign;
+        gbClosed.hidden = canSign;
+        if (canSign) {
+          gbChip.textContent = 'Sign the guestbook';
+          gbIntro.textContent = 'Leave a note for Vaughn, Emily, and the ring bearer. It stays here for good.';
+          return;
+        }
+        gbChip.textContent = 'The guestbook';
+        if (now < GB_OPENS) {
+          gbIntro.textContent = 'It opens on the wedding weekend.';
+          gbClosed.innerHTML = 'Signing opens <strong>Saturday, September 19th</strong> and closes at the end of <strong>Sunday the 20th</strong>. Come back then and leave them a note.';
+        } else {
+          gbIntro.textContent = 'Signing has closed.';
+          gbClosed.innerHTML = 'The guestbook closed at the end of <strong>Sunday, September 20th</strong>. Thank you to everyone who signed it.';
+        }
+      }
 
       // Shares the saved-name key with the gallery and homepage comment forms.
       try { gbName.value = localStorage.getItem('wrangell-name') || ''; } catch {}
@@ -830,7 +875,10 @@
         if (!list.length) {
           const p = document.createElement('p');
           p.className = 'gb-empty';
-          p.textContent = 'No one has signed yet. Be the first.';
+          // Don't invite a signature when the book isn't open for signing.
+          p.textContent = canSignNow
+            ? 'No one has signed yet. Be the first.'
+            : 'No one has signed yet.';
           gbList.appendChild(p);
           return;
         }
@@ -873,6 +921,12 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ plate: GUEST_PLATE, name: gbName.value, text, website: gbHp.value }),
           });
+          if (r.status === 403) {
+            gbError.textContent = 'The guestbook is not open right now.';
+            renderGuestbookState();
+            return;
+          }
+          if (r.status === 409) { gbError.textContent = 'The guestbook is full.'; return; }
           if (r.status === 429) { gbError.textContent = 'Easy there — try again in a moment.'; return; }
           if (!r.ok) { gbError.textContent = 'Could not sign. Try again.'; return; }
           gbText.value = '';
@@ -888,6 +942,7 @@
         }
       });
 
+      renderGuestbookState();
       load();
     })();
   </script>
