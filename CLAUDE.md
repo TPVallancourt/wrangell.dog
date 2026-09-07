@@ -166,6 +166,9 @@ echo 'ADMIN_TOKEN="..."' > .dev.vars         # local dev (gitignored)
 A special edition for Vaughn Taylor & Emily Ulrich's wedding on **September 19th, 2026**.
 Wedding coasters link to the site, so this page is the landing experience for a wave of
 first-time visitors: hero, formalwear strip, guestbook, and one big push into the gallery.
+Tomatoes fall down the page because that is the wedding's theme — they are drawn in CSS (a
+gradient body plus a clip-path calyx on `.tomato::before`), not images, and the whole layer
+is skipped for `prefers-reduced-motion` visitors.
 
 **Routing.** `src/index.js` serves `/wedding` at `/` for the window **2026-09-16 through
 2026-09-23** (US Eastern; the whole window is EDT, so the fixed `-04:00` offset in

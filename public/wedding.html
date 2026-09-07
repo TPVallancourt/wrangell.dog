@@ -476,28 +476,41 @@
     footer a:hover { color: var(--accent); border-bottom-color: var(--accent); }
     footer .ornament { color: var(--accent); margin-right: 8px; font-size: 13px; }
 
-    /* ---------- Petals ---------- */
-    #petals {
+    /* ---------- Falling tomatoes (the wedding theme) ---------- */
+    #tomatoes {
       position: fixed;
       inset: 0;
       pointer-events: none;
       overflow: hidden;
       z-index: 0;
     }
-    .petal {
+    .tomato {
       position: absolute;
-      top: -6vh;
-      width: 11px;
-      height: 8px;
-      border-radius: 60% 40% 55% 45%;
-      opacity: 0.55;
-      animation-name: petal-fall;
+      top: -10vh;
+      /* Slightly squat, the way a tomato actually sits. */
+      border-radius: 48% 48% 46% 46% / 44% 44% 56% 56%;
+      background:
+        radial-gradient(circle at 33% 27%, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 34%),
+        radial-gradient(circle at 50% 42%, #e2593a 0%, #cc3a24 52%, #9d2716 100%);
+      animation-name: tomato-fall;
       animation-timing-function: linear;
       animation-iteration-count: infinite;
     }
-    @keyframes petal-fall {
-      from { transform: translateY(-6vh) translateX(0) rotate(0deg); }
-      to   { transform: translateY(112vh) translateX(var(--drift, 40px)) rotate(540deg); }
+    /* Green calyx — a five-pointed star sitting on the shoulder of the fruit. */
+    .tomato::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -20%;
+      width: 58%;
+      height: 40%;
+      transform: translateX(-50%);
+      background: linear-gradient(#6f8f43, #4e6c30);
+      clip-path: polygon(50% 100%, 0% 18%, 21% 44%, 30% 0%, 50% 32%, 70% 0%, 79% 44%, 100% 18%);
+    }
+    @keyframes tomato-fall {
+      from { transform: translateY(-10vh) translateX(0) rotate(0deg); }
+      to   { transform: translateY(115vh) translateX(var(--drift, 40px)) rotate(var(--spin, 420deg)); }
     }
 
     @keyframes rise {
@@ -507,7 +520,7 @@
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation: none !important; transition: none !important; }
-      #petals { display: none; }
+      #tomatoes { display: none; }
     }
 
     @media (max-width: 760px) {
@@ -524,7 +537,7 @@
   </style>
 </head>
 <body>
-  <div id="petals" aria-hidden="true"></div>
+  <div id="tomatoes" aria-hidden="true"></div>
 
   <div class="page">
     <div class="masthead">
@@ -858,26 +871,29 @@
   </script>
 
   <script>
-    /* Petals — decorative only, and skipped entirely for reduced-motion visitors. */
+    /* Falling tomatoes — decorative only, skipped entirely for reduced-motion visitors.
+       Sizes and speeds are varied so the fall reads as depth rather than a uniform grid. */
     (() => {
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      const host = document.getElementById('petals');
-      const tints = ['#f3e3d8', '#e8cfc2', '#d9bfae', '#f7efe2'];
-      const COUNT = window.innerWidth < 760 ? 12 : 22;
+      const host = document.getElementById('tomatoes');
+      const COUNT = window.innerWidth < 760 ? 26 : 48;
 
       for (let i = 0; i < COUNT; i++) {
-        const p = document.createElement('span');
-        p.className = 'petal';
-        const size = 7 + Math.random() * 8;
-        p.style.left = (Math.random() * 100) + 'vw';
-        p.style.width = size + 'px';
-        p.style.height = (size * 0.72) + 'px';
-        p.style.background = tints[i % tints.length];
-        p.style.setProperty('--drift', (Math.random() * 160 - 80) + 'px');
-        p.style.animationDuration = (11 + Math.random() * 12) + 's';
-        p.style.animationDelay = (-Math.random() * 20) + 's';
-        p.style.opacity = (0.35 + Math.random() * 0.3).toFixed(2);
-        host.appendChild(p);
+        const t = document.createElement('span');
+        t.className = 'tomato';
+        // Bigger tomatoes fall faster and sit in front; small ones hang back and fade.
+        const depth = Math.random();
+        const size = 11 + depth * 15;
+        t.style.left = (Math.random() * 100) + 'vw';
+        t.style.width = size.toFixed(1) + 'px';
+        t.style.height = (size * 0.9).toFixed(1) + 'px';
+        t.style.setProperty('--drift', (Math.random() * 220 - 110).toFixed(0) + 'px');
+        t.style.setProperty('--spin', (Math.random() < 0.5 ? -1 : 1) * (240 + Math.random() * 480) + 'deg');
+        t.style.animationDuration = (16 - depth * 7).toFixed(1) + 's';
+        t.style.animationDelay = (-Math.random() * 18).toFixed(1) + 's';
+        t.style.opacity = (0.5 + depth * 0.45).toFixed(2);
+        t.style.filter = 'brightness(' + (0.86 + Math.random() * 0.28).toFixed(2) + ')';
+        host.appendChild(t);
       }
     })();
   </script>
