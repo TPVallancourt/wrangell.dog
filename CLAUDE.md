@@ -14,7 +14,13 @@ public/
   gallery.html      # full gallery view
   classic.html      # original minimal view (single dog-1.jpeg)
   captions.js       # window.WRANGELL_CAPTIONS array; index 0 = dog-1.jpeg
-  images/           # dog-N.jpeg, referenced as images/dog-N.jpeg
+  wedding.html      # wedding special edition; served at "/" during wedding week
+  images/
+    raw/            # dog-N.jpeg originals (archive; never referenced by a page)
+    resized/        # dog-N.jpeg at <=1600px — what every page actually loads
+    wedding-hero.jpeg   # cropped hero for wedding.html (derived from raw/dog-160)
+  og-default.jpg    # 1200x630 share card for the everyday pages
+  og-wedding.jpg    # 1200x630 share card for wedding.html
   favicon.png       # tab icon: transparent cutout of Wrangell's face (48x48)
   apple-touch-icon.png  # 180x180 app icon (head on brand red) for iOS home screen
   icon-192.png      # PWA maskable app icon (192x192)
@@ -24,11 +30,14 @@ public/
 src/
   index.js          # Worker entry: /api/pets + /api/comments + asset passthrough
 scripts/
+  resize-images.js       # syncs images/raw → images/resized at <=1600px; run by pre-commit hook
   caption-new-images.js  # generates missing captions via Claude vision; run by pre-commit hook
+  check-captions.js      # asserts every raw/dog-N.jpeg has a caption
+  crop-image.swift       # crop + downscale a pixel rect (used for the hero and OG cards)
   make-favicon.swift     # Vision-based background cutout for the favicon (see "Favicon")
   make-app-icon.swift    # composite a cutout onto a solid-color square app icon
 .githooks/
-  pre-commit        # invokes caption-new-images.js before every commit
+  pre-commit        # resize-images.js, then caption-new-images.js, before every commit
 wrangler.jsonc      # PETS KV binding, ASSETS binding, main = src/index.js
 ```
 
@@ -41,9 +50,10 @@ rename → caption (via Claude vision, no API key needed) → update `captions.j
 
 ### How it works
 
-1. Drop any number of image files into `public/images/` (any filename is fine).
+1. Drop any number of image files into `public/images/raw/` (any filename is fine).
 2. Run `/add-photos`. The skill will:
    - Rename files to `dog-N.jpeg` sequentially from the next available number
+   - Run `scripts/resize-images.js` to derive `images/resized/dog-N.jpeg`
    - View each image and write a caption in the established style
    - Present captions for your review before writing them
    - Append entries to `captions.js` and update the header comment
@@ -59,7 +69,13 @@ Captions must read standalone — each is shown solo on the homepage on its assi
 
 ### How photos are wired in
 
-- **Gallery** (`gallery.html`): uses `captions.length` as total plate count; generates `images/dog-${n}.jpeg` for n = 1..total. Images and captions must always be in sync.
+- **Two image sets**: `public/images/raw/` holds the originals as an archive; `public/images/resized/`
+  holds the `<=1600px` copies that every page loads (534 MB → 78 MB across 160 photos). Pages must
+  reference `images/resized/dog-N.jpeg` — never `raw/`. `scripts/resize-images.js` regenerates only
+  what is missing or stale, so it is cheap to re-run; `--force` redoes everything. Note that 36 of
+  the photos are stored sideways with an EXIF orientation tag of 6; `sips` preserves that tag, so
+  they render upright in a browser even though most image viewers show them rotated.
+- **Gallery** (`gallery.html`): uses `captions.length` as total plate count; generates `images/resized/dog-${n}.jpeg` for n = 1..total. Images and captions must always be in sync.
 - **Homepage** (`index.html`): picks today's photo via `(year*10000 + month*100 + day) % captions.length + 1`. Rotation shifts when photos are added — expected.
 - **Pre-commit hook** (`.githooks/pre-commit`): runs `scripts/caption-new-images.js` (requires `ANTHROPIC_API_KEY`). When captions are already written by the skill, the hook exits cleanly without the key.
 
@@ -71,7 +87,7 @@ git config core.hooksPath .githooks
 ## Favicon & app icons
 
 All icons derive from one transparent head cutout of Wrangell from
-`public/images/dog-29.jpeg` (a clean head-on portrait), produced by `scripts/make-favicon.swift`
+`public/images/raw/dog-29.jpeg` (a clean head-on portrait), produced by `scripts/make-favicon.swift`
 via the macOS Vision framework (`VNGenerateForegroundInstanceMaskRequest`) — no installs, macOS only.
 
 - **`favicon.png`** (48×48) — the bare transparent cutout; used as the browser tab icon.
@@ -83,7 +99,7 @@ via the macOS Vision framework (`VNGenerateForegroundInstanceMaskRequest`) — n
 To regenerate from a different source photo or crop:
 ```
 # 1. transparent head cutout (x y w h = crop rect, top-left origin; omit to keep full subject)
-swift scripts/make-favicon.swift public/images/dog-29.jpeg /tmp/head.png 900 800 1250 1250
+swift scripts/make-favicon.swift public/images/raw/dog-29.jpeg /tmp/head.png 900 800 1250 1250
 sips -z 48 48 /tmp/head.png --out public/favicon.png
 # 2. opaque app icons on brand red (last arg = safe-zone inset fraction)
 swift scripts/make-app-icon.swift /tmp/head.png public/icon-512.png 512 a3b18a 0.14
@@ -144,6 +160,38 @@ ordinary visitors never see it. Configure it per environment:
 npx wrangler secret put ADMIN_TOKEN          # production
 echo 'ADMIN_TOKEN="..."' > .dev.vars         # local dev (gitignored)
 ```
+
+## Wedding week (`wedding.html`)
+
+A special edition for Vaughn Taylor & Emily Ulrich's wedding on **September 19th, 2026**.
+Wedding coasters link to the site, so this page is the landing experience for a wave of
+first-time visitors: hero, formalwear strip, guestbook, and one big push into the gallery.
+
+**Routing.** `src/index.js` serves `/wedding` at `/` for the window **2026-09-16 through
+2026-09-23** (US Eastern; the whole window is EDT, so the fixed `-04:00` offset in
+`WEDDING_START`/`WEDDING_END` is exact). This requires `assets.run_worker_first` in
+`wrangler.jsonc` — without it Cloudflare serves `public/index.html` directly and the Worker
+never runs. `run_worker_first` is scoped to `["/", "/index.html"]` so every other path keeps
+the fast direct-to-asset path.
+
+| URL | Behaviour |
+| --- | --- |
+| `/` | Wedding page during the window, photo-of-the-day otherwise |
+| `/?wedding=1` | Forces the wedding page **any time** — use this to preview before it goes live |
+| `/?daily=1` | Forces photo-of-the-day, even during the window |
+| `/wedding` | Always the wedding page, year-round |
+
+`gallery.html` reveals a wedding banner and swaps its masthead to "Wedding Edition" on the
+same window, and also honours `?wedding=1`. Keep the dates in the two files in sync.
+
+**Tense flip.** The headline, countdown chip, and dek switch from "are getting married" to
+"got married" at **midnight Eastern on 2026-09-20** (the `AFTER` constant in `wedding.html`).
+The page re-checks hourly, so a tab left open overnight flips on its own.
+
+**Guestbook.** Reuses `/api/comments` on reserved **plate 919** — no Worker change was needed,
+since `toPlate` accepts any integer ≥ 1 and the gallery only ever renders plates 1..160.
+Admin deletion works exactly as elsewhere (`?admin=<token>`). The "pet the ring bearer"
+button increments **plate 160**, so it also feeds the gallery's hall of fame.
 
 ## Commands
 

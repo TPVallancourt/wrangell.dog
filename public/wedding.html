@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#ece4cf">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Wrangell">
+  <title>My parents are getting married · Wrangell.dog</title>
+  <meta name="description" content="Vaughn Taylor and Emily Ulrich are getting married on September 19th, 2026. Wrangell is the ring bearer. Sign the guestbook.">
+  <link rel="canonical" href="https://wrangell.dog/wedding">
+
+  <!-- Share card: coasters send people here, and most of them arrive via a texted link. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Wrangell.dog">
+  <meta property="og:url" content="https://wrangell.dog/wedding">
+  <meta property="og:title" content="My parents are getting married!">
+  <meta property="og:description" content="Vaughn Taylor and Emily Ulrich — September 19th, 2026. Sign the guestbook, then meet the ring bearer.">
+  <meta property="og:image" content="https://wrangell.dog/og-wedding.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Wrangell, a yellow Labrador, wearing a tuxedo on the beach">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ece4cf;
+      --bg-deep: #e3dabf;
+      --ink: #1a1410;
+      --ink-muted: #6b5d48;
+      --accent: #c43d1f;
+      --rule: rgba(26, 20, 16, 0.85);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { background: var(--bg); }
+
+    body {
+      font-family: 'Fraunces', Georgia, serif;
+      color: var(--ink);
+      background: var(--bg);
+      background-image:
+        radial-gradient(rgba(26, 20, 16, 0.05) 1px, transparent 1px),
+        radial-gradient(rgba(26, 20, 16, 0.025) 1px, transparent 1px);
+      background-size: 3px 3px, 7px 7px;
+      background-position: 0 0, 1px 2px;
+      min-height: 100vh;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+
+    .page {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 36px 72px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ---------- Masthead ---------- */
+    .masthead {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--rule);
+      animation: rise 0.9s ease-out both;
+    }
+    .masthead a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(26, 20, 16, 0.25);
+      padding-bottom: 1px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .masthead a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+    .masthead .mark { color: var(--accent); margin-right: 8px; }
+
+    /* ---------- Hero copy ---------- */
+    .kicker {
+      margin-top: 56px;
+      margin-bottom: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      animation: rise 1.0s 0.1s ease-out both;
+    }
+
+    .headline {
+      font-weight: 300;
+      font-size: clamp(40px, 7.5vw, 104px);
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+      font-variation-settings: "opsz" 144;
+      animation: rise 1.1s 0.18s ease-out both;
+    }
+    .headline em {
+      font-style: italic;
+      font-weight: 420;
+      color: var(--accent);
+    }
+
+    .names {
+      margin-top: 28px;
+      font-size: clamp(19px, 2.4vw, 27px);
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      animation: rise 1.1s 0.24s ease-out both;
+    }
+    .names .amp { font-style: italic; color: var(--accent); padding: 0 4px; }
+
+    .datebar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--rule);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      animation: rise 1.1s 0.3s ease-out both;
+    }
+    .countdown {
+      color: var(--bg);
+      background: var(--accent);
+      padding: 5px 12px;
+      letter-spacing: 0.16em;
+    }
+
+    .dek {
+      margin-top: 26px;
+      max-width: 30em;
+      font-size: clamp(16px, 1.5vw, 19px);
+      font-style: italic;
+      line-height: 1.55;
+      color: var(--ink-muted);
+      font-variation-settings: "opsz" 14;
+      animation: rise 1.1s 0.36s ease-out both;
+    }
+
+    /* ---------- Hero photo ---------- */
+    .hero {
+      margin-top: 44px;
+      animation: rise 1.0s 0.42s ease-out both;
+    }
+    .hero figure { width: fit-content; max-width: 100%; margin: 0 auto; }
+    .hero .frame { position: relative; background: var(--bg-deep); width: fit-content; max-width: 100%; }
+    .hero .frame::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      box-shadow: inset 0 0 0 1px rgba(26, 20, 16, 0.08);
+      pointer-events: none;
+    }
+    .hero img {
+      width: 100%;
+      height: auto;
+      display: block;
+      filter: contrast(1.02) saturate(0.96);
+    }
+    @media (min-width: 761px) {
+      .hero img { width: auto; max-width: 100%; max-height: 74vh; }
+    }
+    .hero figcaption {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 24px;
+      margin-top: 16px;
+      padding-top: 13px;
+      border-top: 1px solid var(--rule);
+    }
+    .plate-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .plate-note {
+      font-size: clamp(14px, 1.3vw, 17px);
+      font-style: italic;
+      color: var(--ink-muted);
+      text-align: right;
+      font-variation-settings: "opsz" 14;
+    }
+
+    /* ---------- Pet the ring bearer ---------- */
+    .ring {
+      position: relative;
+      margin-top: 22px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+    }
+    .ring-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink);
+      background: none;
+      border: 1px solid rgba(26, 20, 16, 0.3);
+      padding: 10px 18px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ring-btn:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+    .ring-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .ring-meter { flex: 1 1 220px; min-width: 200px; }
+    .ring-track {
+      height: 3px;
+      background: rgba(26, 20, 16, 0.16);
+      overflow: hidden;
+    }
+    .ring-fill {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--accent);
+      transition: width 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+    }
+    .ring-label {
+      margin-top: 7px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: var(--ink-muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .ring-label.bump { animation: ring-bump 0.45s ease-out; }
+    @keyframes ring-bump {
+      0%   { transform: translateY(0); color: var(--ink-muted); }
+      40%  { transform: translateY(-3px); color: var(--accent); }
+      100% { transform: translateY(0); color: var(--ink-muted); }
+    }
+    .pet-float {
+      position: absolute;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      animation: petFloat 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+      z-index: 5;
+      text-shadow: 0 1px 6px rgba(236, 228, 207, 0.85);
+    }
+    @keyframes petFloat {
+      from { opacity: 1; transform: translate(-50%, -50%) scale(0.9); }
+      to   { opacity: 0; transform: translate(-50%, calc(-50% - 48px)) scale(1.05); }
+    }
+
+    /* ---------- Section rule ---------- */
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--rule);
+      margin-bottom: 20px;
+    }
+
+    /* ---------- Formalwear strip ---------- */
+    .strip { margin-top: 72px; }
+    .strip-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    .strip-item { display: block; text-decoration: none; color: inherit; }
+    .strip-item .shot {
+      position: relative;
+      background: var(--bg-deep);
+      aspect-ratio: 4 / 5;
+      overflow: hidden;
+    }
+    .strip-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: contrast(1.02) saturate(0.96);
+      transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+    }
+    .strip-item:hover img { transform: scale(1.03); }
+    .strip-cap {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+    }
+    .strip-cap .n { color: var(--accent); }
+
+    /* ---------- Gallery call to action ---------- */
+    .cta {
+      margin-top: 72px;
+      padding: 34px 30px;
+      border: 1px solid var(--rule);
+      text-align: center;
+    }
+    .cta h2 {
+      font-weight: 350;
+      font-size: clamp(24px, 3.4vw, 40px);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      font-variation-settings: "opsz" 72;
+    }
+    .cta h2 em { font-style: italic; color: var(--accent); }
+    .cta p {
+      margin-top: 12px;
+      font-size: 16px;
+      font-style: italic;
+      color: var(--ink-muted);
+      font-variation-settings: "opsz" 14;
+    }
+    .cta-btn {
+      display: inline-block;
+      margin-top: 22px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--bg);
+      background: var(--ink);
+      border: 1px solid var(--ink);
+      padding: 14px 28px;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .cta-btn:hover { background: var(--accent); border-color: var(--accent); }
+
+    /* ---------- Guestbook ---------- */
+    .guestbook { margin-top: 72px; }
+    .gb-intro {
+      font-size: 16px;
+      font-style: italic;
+      color: var(--ink-muted);
+      font-variation-settings: "opsz" 14;
+      margin-bottom: 20px;
+    }
+    .gb-list { display: flex; flex-direction: column; gap: 18px; margin-bottom: 24px; }
+    .gb-entry { position: relative; padding-right: 22px; }
+    .gb-head {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .gb-name { color: var(--accent); }
+    .gb-time { color: var(--ink-muted); }
+    .gb-text {
+      font-size: 16px;
+      font-style: italic;
+      line-height: 1.5;
+      font-variation-settings: "opsz" 14;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .gb-del {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: none;
+      border: none;
+      color: var(--ink-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 2px;
+      transition: color 0.2s;
+    }
+    .gb-del:hover { color: var(--accent); }
+    .gb-empty { font-style: italic; font-size: 15px; color: var(--ink-muted); }
+    .gb-form { display: flex; flex-direction: column; gap: 10px; }
+    .gb-name-input, .gb-text-input {
+      background: var(--bg-deep);
+      border: 1px solid rgba(26, 20, 16, 0.3);
+      color: var(--ink);
+      padding: 11px 13px;
+      width: 100%;
+    }
+    .gb-name-input { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.04em; }
+    .gb-text-input { font-family: 'Fraunces', Georgia, serif; font-size: 16px; resize: vertical; min-height: 76px; }
+    .gb-name-input::placeholder, .gb-text-input::placeholder { color: var(--ink-muted); }
+    .gb-name-input:focus, .gb-text-input:focus { outline: none; border-color: var(--accent); }
+    .gb-name-wrap { position: relative; }
+    .gb-name-wrap .gb-name-input { padding-right: 32px; }
+    .gb-name-clear {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--ink-muted);
+      cursor: pointer; font-size: 16px; padding: 0 2px; line-height: 1;
+      transition: color 0.15s;
+    }
+    .gb-name-clear:hover { color: var(--accent); }
+    .gb-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    .gb-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .gb-error { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); }
+    .gb-submit {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink);
+      background: none;
+      border: 1px solid rgba(26, 20, 16, 0.3);
+      padding: 11px 22px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .gb-submit:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+    .gb-submit:disabled { opacity: 0.5; cursor: default; }
+
+    /* ---------- Footer ---------- */
+    footer {
+      margin-top: 80px;
+      padding-top: 16px;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+    }
+    footer a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(26, 20, 16, 0.25);
+      padding-bottom: 1px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    footer a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+    footer .ornament { color: var(--accent); margin-right: 8px; font-size: 13px; }
+
+    /* ---------- Petals ---------- */
+    #petals {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .petal {
+      position: absolute;
+      top: -6vh;
+      width: 11px;
+      height: 8px;
+      border-radius: 60% 40% 55% 45%;
+      opacity: 0.55;
+      animation-name: petal-fall;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+    }
+    @keyframes petal-fall {
+      from { transform: translateY(-6vh) translateX(0) rotate(0deg); }
+      to   { transform: translateY(112vh) translateX(var(--drift, 40px)) rotate(540deg); }
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      #petals { display: none; }
+    }
+
+    @media (max-width: 760px) {
+      .page { padding: 24px 20px 56px; }
+      .kicker { margin-top: 36px; }
+      .headline { font-size: 11.5vw; }
+      .hero figcaption { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .plate-note { text-align: left; }
+      .strip-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .strip-item:nth-child(3) { display: none; }
+      .cta { padding: 26px 20px; }
+      footer { flex-direction: column; gap: 6px; margin-top: 56px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="petals" aria-hidden="true"></div>
+
+  <div class="page">
+    <div class="masthead">
+      <span><span class="mark">●</span>Wrangell.dog</span>
+      <span><a href="gallery.html">Gallery →</a></span>
+    </div>
+
+    <p class="kicker">Special edition · September MMXXVI</p>
+    <h1 class="headline" id="headline">My parents are getting <em>married</em>.</h1>
+
+    <p class="names">Vaughn Taylor <span class="amp">&amp;</span> Emily Ulrich</p>
+
+    <div class="datebar">
+      <span class="countdown" id="countdown">&nbsp;</span>
+      <span>Saturday, September 19th, 2026</span>
+    </div>
+
+    <p class="dek" id="dek">
+      I have been fitted for a tuxedo. I have been told to sit, to stay, and to
+      carry something small and expensive down a very long aisle. Nobody has explained why.
+    </p>
+
+    <div class="hero">
+      <figure>
+        <div class="frame">
+          <img src="images/wedding-hero.jpeg" alt="Wrangell, a yellow Labrador, sprinting across the beach in a tuxedo" fetchpriority="high" width="941" height="1800">
+        </div>
+        <figcaption>
+          <span class="plate-num">Plate №160</span>
+          <span class="plate-note">Tuxedo, full sprint</span>
+        </figcaption>
+        <div class="ring">
+          <button class="ring-btn" id="ring-btn" type="button">&#128062;&nbsp;Pet the ring bearer</button>
+          <div class="ring-meter">
+            <div class="ring-track"><span class="ring-fill" id="ring-fill"></span></div>
+            <p class="ring-label" id="ring-label">Loading…</p>
+          </div>
+        </div>
+      </figure>
+    </div>
+
+    <section class="strip">
+      <p class="section-label">Previously, in formalwear</p>
+      <div class="strip-grid">
+        <a class="strip-item" href="gallery.html#plate-12">
+          <div class="shot">
+            <img src="images/resized/dog-12.jpeg" alt="Wrangell in a tuxedo on the beach, eyes closed" loading="lazy" style="object-position: 60% 42%;">
+          </div>
+          <div class="strip-cap"><span class="n">№12</span><span>Tuxedo at the shore</span></div>
+        </a>
+        <a class="strip-item" href="gallery.html#plate-121">
+          <div class="shot">
+            <img src="images/resized/dog-121.jpeg" alt="Wrangell in a tuxedo beside another dog in a wedding dress and veil" loading="lazy" style="object-position: center 68%;">
+          </div>
+          <div class="strip-cap"><span class="n">№121</span><span>Wedding party of two</span></div>
+        </a>
+        <a class="strip-item" href="gallery.html#plate-151">
+          <div class="shot">
+            <img src="images/resized/dog-151.jpeg" alt="Wrangell in a bandana on a sidewalk lined with wildflowers" loading="lazy" style="object-position: center 72%;">
+          </div>
+          <div class="strip-cap"><span class="n">№151</span><span>Bandana on, looking back</span></div>
+        </a>
+      </div>
+    </section>
+
+    <section class="cta">
+      <h2>There are <em>160</em> more<br>photographs of me.</h2>
+      <p>An ongoing monograph of one (1) very good boy, observed at close range.</p>
+      <a class="cta-btn" href="gallery.html">Enter the gallery →</a>
+    </section>
+
+    <section class="guestbook">
+      <p class="section-label">Sign the guestbook</p>
+      <p class="gb-intro">
+        Leave a note for Vaughn, Emily, and the ring bearer. It stays here for good.
+      </p>
+      <div class="gb-list" id="gb-list"></div>
+      <form class="gb-form" id="gb-form" autocomplete="off">
+        <div class="gb-name-wrap">
+          <input class="gb-name-input" id="gb-name" type="text" maxlength="40" placeholder="Your name (optional)">
+          <button type="button" class="gb-name-clear" id="gb-name-clear" aria-label="Clear saved name" hidden>×</button>
+        </div>
+        <input class="gb-hp" id="gb-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <textarea class="gb-text-input" id="gb-text" maxlength="500" rows="3" placeholder="Congratulations, advice, or a message for the dog…"></textarea>
+        <div class="gb-row">
+          <span class="gb-error" id="gb-error" role="alert"></span>
+          <button class="gb-submit" id="gb-submit" type="submit">Sign</button>
+        </div>
+      </form>
+    </section>
+
+    <footer>
+      <span>© MMXXVI · <a href="gallery.html">Wrangell.dog</a></span>
+      <span><a href="/?daily=1">Photo of the day</a></span>
+      <span><a href="classic.html">Classic view</a></span>
+      <span class="install-cta" id="install-slot" hidden><a href="#" id="install-link"><span class="ornament">⤓</span>Install app</a></span>
+      <span><span class="ornament">❦</span>He is a very good boy</span>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      // ---------- Dates ----------
+      // The whole 9/16–9/23 window sits in EDT (UTC-4), so a fixed offset is exact here.
+      const WEDDING_DAY = Date.parse('2026-09-19T00:00:00-04:00');
+      const AFTER       = Date.parse('2026-09-20T00:00:00-04:00'); // tense flips at midnight
+      const DAY_MS = 86400000;
+
+      const RING_PLATE = 160;    // the tuxedo sprint — the hero, and what "pet" increments
+      const GUEST_PLATE = 919;   // reserved plate for the wedding guestbook (9/19)
+      const PET_GOAL = 1000;
+
+      const headline = document.getElementById('headline');
+      const countdown = document.getElementById('countdown');
+      const dek = document.getElementById('dek');
+
+      function renderTense() {
+        const now = Date.now();
+
+        if (now >= AFTER) {
+          headline.innerHTML = 'My parents got <em>married</em>.';
+          countdown.textContent = 'Married';
+          dek.textContent = 'I wore the tuxedo. I did not eat the flowers. I carried something small '
+            + 'and expensive down a very long aisle and I did not drop it once. I am told this went well.';
+          return;
+        }
+
+        if (now >= WEDDING_DAY) {
+          countdown.textContent = 'Today';
+          return;
+        }
+
+        const days = Math.ceil((WEDDING_DAY - now) / DAY_MS);
+        countdown.textContent = days === 1 ? 'Tomorrow' : `${days} days out`;
+      }
+
+      renderTense();
+      // Re-check on the hour so a page left open overnight flips tense on its own.
+      setInterval(renderTense, 60 * 60 * 1000);
+
+      // ---------- Pet the ring bearer ----------
+      const ringBtn = document.getElementById('ring-btn');
+      const ringFill = document.getElementById('ring-fill');
+      const ringLabel = document.getElementById('ring-label');
+      const ringRow = ringBtn.parentElement;
+
+      function renderPets(n) {
+        const count = n || 0;
+        ringLabel.textContent = `${count.toLocaleString('en-US')} pets · goal ${PET_GOAL.toLocaleString('en-US')}`;
+        ringFill.style.width = Math.min(100, (count / PET_GOAL) * 100) + '%';
+      }
+
+      function bump() {
+        ringLabel.classList.remove('bump');
+        void ringLabel.offsetWidth;
+        ringLabel.classList.add('bump');
+      }
+
+      function spawnFloat(clientX, clientY) {
+        const rect = ringRow.getBoundingClientRect();
+        const el = document.createElement('span');
+        el.className = 'pet-float';
+        el.textContent = '+1';
+        el.style.left = (clientX - rect.left) + 'px';
+        el.style.top = (clientY - rect.top) + 'px';
+        ringRow.appendChild(el);
+        setTimeout(() => el.remove(), 900);
+      }
+
+      (async () => {
+        try {
+          const r = await fetch('/api/pets');
+          if (!r.ok) throw new Error('pets');
+          const { plates } = await r.json();
+          renderPets((plates || {})[RING_PLATE]);
+        } catch {
+          ringLabel.textContent = '';
+        }
+      })();
+
+      ringBtn.addEventListener('click', async () => {
+        const rect = ringBtn.getBoundingClientRect();
+        spawnFloat(rect.left + rect.width / 2, rect.top - 8);
+        try {
+          const r = await fetch('/api/pets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plate: RING_PLATE }),
+          });
+          if (!r.ok) return;
+          const data = await r.json();
+          if (typeof data.plateCount === 'number') { renderPets(data.plateCount); bump(); }
+        } catch {}
+      });
+
+      // ---------- Guestbook (same /api/comments endpoint, on a reserved plate) ----------
+      let adminToken = '';
+      try {
+        const fromUrl = new URLSearchParams(location.search).get('admin');
+        if (fromUrl) localStorage.setItem('wrangell-admin', fromUrl);
+        adminToken = localStorage.getItem('wrangell-admin') || '';
+      } catch {}
+
+      const gbList = document.getElementById('gb-list');
+      const gbForm = document.getElementById('gb-form');
+      const gbName = document.getElementById('gb-name');
+      const gbText = document.getElementById('gb-text');
+      const gbHp = document.getElementById('gb-hp');
+      const gbError = document.getElementById('gb-error');
+      const gbSubmit = document.getElementById('gb-submit');
+      const gbNameClear = document.getElementById('gb-name-clear');
+
+      // Shares the saved-name key with the gallery and homepage comment forms.
+      try { gbName.value = localStorage.getItem('wrangell-name') || ''; } catch {}
+      gbNameClear.hidden = !gbName.value;
+      gbName.addEventListener('input', () => { gbNameClear.hidden = !gbName.value; });
+      gbNameClear.addEventListener('click', () => {
+        gbName.value = '';
+        gbNameClear.hidden = true;
+        try { localStorage.removeItem('wrangell-name'); } catch {}
+        gbName.focus();
+      });
+
+      function relTime(ts) {
+        const s = Math.floor((Date.now() - ts) / 1000);
+        if (s < 60) return 'just now';
+        const m = Math.floor(s / 60);
+        if (m < 60) return `${m}m ago`;
+        const h = Math.floor(m / 60);
+        if (h < 24) return `${h}h ago`;
+        const d = Math.floor(h / 24);
+        if (d < 30) return `${d}d ago`;
+        return new Date(ts).toLocaleDateString();
+      }
+
+      function entryEl(c) {
+        const wrap = document.createElement('div');
+        wrap.className = 'gb-entry';
+        const head = document.createElement('div');
+        head.className = 'gb-head';
+        const name = document.createElement('span');
+        name.className = 'gb-name';
+        name.textContent = c.name || 'Anonymous';
+        const time = document.createElement('span');
+        time.className = 'gb-time';
+        time.textContent = relTime(c.ts);
+        head.appendChild(name);
+        head.appendChild(time);
+        const text = document.createElement('div');
+        text.className = 'gb-text';
+        text.textContent = c.text;
+        wrap.appendChild(head);
+        wrap.appendChild(text);
+        if (adminToken) {
+          const del = document.createElement('button');
+          del.className = 'gb-del';
+          del.type = 'button';
+          del.textContent = '×';
+          del.setAttribute('aria-label', 'Delete entry');
+          del.addEventListener('click', () => remove(c.id));
+          wrap.appendChild(del);
+        }
+        return wrap;
+      }
+
+      function render(list) {
+        gbList.innerHTML = '';
+        if (!list.length) {
+          const p = document.createElement('p');
+          p.className = 'gb-empty';
+          p.textContent = 'No one has signed yet. Be the first.';
+          gbList.appendChild(p);
+          return;
+        }
+        list.forEach((c) => gbList.appendChild(entryEl(c)));
+      }
+
+      async function load() {
+        gbList.innerHTML = '<p class="gb-empty">Loading…</p>';
+        try {
+          const r = await fetch(`/api/comments?plate=${GUEST_PLATE}`);
+          if (!r.ok) throw new Error('load failed');
+          const { comments } = await r.json();
+          render(comments || []);
+        } catch {
+          gbList.innerHTML = '<p class="gb-empty">Could not load the guestbook.</p>';
+        }
+      }
+
+      async function remove(id) {
+        if (!adminToken) return;
+        try {
+          const r = await fetch('/api/comments', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+            body: JSON.stringify({ plate: GUEST_PLATE, id }),
+          });
+          if (r.ok) load();
+        } catch {}
+      }
+
+      gbForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = gbText.value.trim();
+        gbError.textContent = '';
+        if (!text) { gbError.textContent = 'Say something first.'; return; }
+        gbSubmit.disabled = true;
+        try {
+          const r = await fetch('/api/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plate: GUEST_PLATE, name: gbName.value, text, website: gbHp.value }),
+          });
+          if (r.status === 429) { gbError.textContent = 'Easy there — try again in a moment.'; return; }
+          if (!r.ok) { gbError.textContent = 'Could not sign. Try again.'; return; }
+          gbText.value = '';
+          try {
+            const n = gbName.value.trim();
+            if (n) localStorage.setItem('wrangell-name', n); else localStorage.removeItem('wrangell-name');
+          } catch {}
+          load();
+        } catch {
+          gbError.textContent = 'Network error.';
+        } finally {
+          gbSubmit.disabled = false;
+        }
+      });
+
+      load();
+    })();
+  </script>
+
+  <script>
+    /* Petals — decorative only, and skipped entirely for reduced-motion visitors. */
+    (() => {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const host = document.getElementById('petals');
+      const tints = ['#f3e3d8', '#e8cfc2', '#d9bfae', '#f7efe2'];
+      const COUNT = window.innerWidth < 760 ? 12 : 22;
+
+      for (let i = 0; i < COUNT; i++) {
+        const p = document.createElement('span');
+        p.className = 'petal';
+        const size = 7 + Math.random() * 8;
+        p.style.left = (Math.random() * 100) + 'vw';
+        p.style.width = size + 'px';
+        p.style.height = (size * 0.72) + 'px';
+        p.style.background = tints[i % tints.length];
+        p.style.setProperty('--drift', (Math.random() * 160 - 80) + 'px');
+        p.style.animationDuration = (11 + Math.random() * 12) + 's';
+        p.style.animationDelay = (-Math.random() * 20) + 's';
+        p.style.opacity = (0.35 + Math.random() * 0.3).toFixed(2);
+        host.appendChild(p);
+      }
+    })();
+  </script>
+
+  <script>
+    /* Install affordance: native prompt where supported, iOS hint otherwise. */
+    (() => {
+      let deferred = null;
+      let slot = null;
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferred = e;
+        if (slot) slot.hidden = false;
+      });
+      window.addEventListener('appinstalled', () => {
+        if (slot) slot.hidden = true;
+        deferred = null;
+      });
+
+      const wire = () => {
+        slot = document.getElementById('install-slot');
+        const link = document.getElementById('install-link');
+        if (!slot || !link) return;
+
+        const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+        if (standalone) { slot.hidden = true; return; }
+
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+          || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (deferred || isIOS) slot.hidden = false;
+
+        link.addEventListener('click', async (e) => {
+          e.preventDefault();
+          if (deferred) {
+            deferred.prompt();
+            await deferred.userChoice;
+            deferred = null;
+            slot.hidden = true;
+          }
+        });
+      };
+
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+      else wire();
+    })();
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

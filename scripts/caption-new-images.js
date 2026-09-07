@@ -1,16 +1,20 @@
 #!/usr/bin/env node
 'use strict';
 
-// Finds dog-*.jpeg files in public/images that lack a caption in captions.js and
+// Finds dog-*.jpeg files in public/images/raw that lack a caption in captions.js and
 // generates one via Claude vision. Stages public/captions.js when done.
 // Requires ANTHROPIC_API_KEY.
+//
+// Photos are uploaded from public/images/resized when available — same picture, a
+// fraction of the bytes. Run scripts/resize-images.js first (the pre-commit hook does).
 
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
-const IMAGES_DIR = path.join(ROOT, 'public', 'images');
+const IMAGES_DIR = path.join(ROOT, 'public', 'images', 'raw');
+const RESIZED_DIR = path.join(ROOT, 'public', 'images', 'resized');
 const CAPTIONS_FILE = path.join(ROOT, 'public', 'captions.js');
 
 function readCaptions() {
@@ -96,7 +100,8 @@ async function main() {
   const samples = captions.filter(Boolean);
 
   for (const n of missing) {
-    const imagePath = path.join(IMAGES_DIR, `dog-${n}.jpeg`);
+    const resized = path.join(RESIZED_DIR, `dog-${n}.jpeg`);
+    const imagePath = fs.existsSync(resized) ? resized : path.join(IMAGES_DIR, `dog-${n}.jpeg`);
     process.stdout.write(`  dog-${n}.jpeg → `);
     const caption = await generateCaption(imagePath, samples);
     process.stdout.write(`"${caption}"\n`);

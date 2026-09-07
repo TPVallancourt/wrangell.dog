@@ -7,6 +7,17 @@ const MAX_NAME = 40;           // commenter name length cap
 const RL_WINDOW = 60;          // rate-limit window (seconds); KV TTL minimum is 60
 const RL_MAX = 10;             // max comments per IP per window
 
+// Wedding week: 2026-09-16 through 2026-09-23 in US Eastern. The whole window sits in
+// EDT, so the fixed -04:00 offset is exact. During it "/" serves the wedding page
+// instead of photo-of-the-day; "/?daily=1" opts back into the daily edition, and
+// /wedding stays directly reachable year-round.
+const WEDDING_START = Date.parse('2026-09-16T00:00:00-04:00');
+const WEDDING_END = Date.parse('2026-09-24T00:00:00-04:00');
+
+function inWeddingWeek(now) {
+  return now >= WEDDING_START && now < WEDDING_END;
+}
+
 // Returns a positive integer plate, or null.
 function toPlate(value) {
   const n = Number(value);
@@ -141,6 +152,20 @@ export default {
 
     if (url.pathname === '/api/pets') return handlePets(request, env);
     if (url.pathname === '/api/comments') return handleComments(request, env);
+
+    // "/?wedding=1" previews the takeover before it goes live; "/?daily=1" opts out of it
+    // while it is. Neither is needed to reach the page itself — /wedding always works.
+    if (url.pathname === '/' || url.pathname === '/index.html') {
+      const forced = url.searchParams.has('wedding');
+      const optedOut = url.searchParams.has('daily');
+      if (forced || (inWeddingWeek(Date.now()) && !optedOut)) {
+        // Clean URL, not "/wedding.html" — the .html form 307-redirects, which would
+        // bounce the visitor off "/" and show the redirect in the address bar.
+        const target = new URL(url);
+        target.pathname = '/wedding';
+        return env.ASSETS.fetch(new Request(target, request));
+      }
+    }
 
     return env.ASSETS.fetch(request);
   },

@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 'use strict';
 
-// Verifies every dog-N.jpeg in public/images/ has a non-empty caption in captions.js.
+// Verifies every dog-N.jpeg in public/images/raw/ has a non-empty caption in captions.js.
 // Exits 1 if any are missing; suitable for CI and local preflight checks.
 
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const IMAGES_DIR = path.join(ROOT, 'public', 'images');
+const IMAGES_DIR = path.join(ROOT, 'public', 'images', 'raw');
 const CAPTIONS_FILE = path.join(ROOT, 'public', 'captions.js');
 
 const src = fs.readFileSync(CAPTIONS_FILE, 'utf8');

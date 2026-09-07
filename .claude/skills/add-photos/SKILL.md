@@ -1,6 +1,6 @@
 ---
 name: add-photos
-description: Add new photos to the wrangell.dog repo — rename to dog-N.jpeg convention, generate captions via vision, update captions.js. Use when the user says "add photos", "I added images", "new photos", or when untracked image files appear in public/images/.
+description: Add new photos to the wrangell.dog repo — rename to dog-N.jpeg convention, generate captions via vision, update captions.js. Use when the user says "add photos", "I added images", "new photos", or when untracked image files appear in public/images/raw/.
 metadata:
   scope: project
   category: content
@@ -8,23 +8,32 @@ metadata:
 
 # Add Photos
 
-Handles the full photo intake workflow: rename → caption → update `captions.js` → stage for commit.
+Handles the full photo intake workflow: rename → resize → caption → update `captions.js` → stage for commit.
 
 ## What this skill does
 
-1. Finds any untracked or newly-added image files in `public/images/` that don't follow the `dog-N.jpeg` naming convention
+1. Finds any untracked or newly-added image files in `public/images/raw/` that don't follow the `dog-N.jpeg` naming convention
 2. Renames them sequentially from the next available number
-3. Views each image directly and writes a caption in the established style
-4. Appends entries to `captions.js` and updates the header comment
-5. Stages everything — images + updated `captions.js` — ready to commit
+3. Derives the web-sized copies in `public/images/resized/`
+4. Views each image directly and writes a caption in the established style
+5. Appends entries to `captions.js` and updates the header comment
+6. Stages everything — both image sets + updated `captions.js` — ready to commit
 
 ## Step 1 — Find and rename
 
-Run `git status` to find untracked files in `public/images/`. List existing `dog-N.jpeg` files to find the highest N.
+Run `git status` to find untracked files in `public/images/raw/`. List existing `public/images/raw/dog-N.jpeg` files to find the highest N.
+
+Originals live in `public/images/raw/`; nothing on the site references them directly.
 
 Rename each new file to `dog-<next>.jpeg` in order. The order doesn't matter for site correctness (the homepage rotation is date-seeded and any order works), so process in whatever order `git status` lists them.
 
-## Step 2 — Generate captions
+## Step 2 — Resize
+
+Run `node scripts/resize-images.js`. This derives `public/images/resized/dog-N.jpeg` (max 1600px)
+for anything missing or stale — that resized set is what every page actually loads. It is
+idempotent, so re-running is harmless.
+
+## Step 3 — Generate captions
 
 Read each new image directly with the Read tool (you can view images). For each one, write a caption following this style:
 
@@ -45,7 +54,7 @@ Read each new image directly with the Read tool (you can view images). For each 
 
 After generating all captions, present them to the user as a numbered list with the image filename before asking to proceed. This lets the user tweak any before they're committed.
 
-## Step 3 — Update captions.js
+## Step 4 — Update captions.js
 
 `public/captions.js` structure:
 ```js
@@ -61,9 +70,9 @@ window.WRANGELL_CAPTIONS = [
 - Update the header comment to reflect the new last image number
 - The array index is 0-based: `captions[0]` = dog-1, `captions[N-1]` = dog-N
 
-## Step 4 — Stage
+## Step 5 — Stage
 
-`git add public/images/dog-*.jpeg public/captions.js`
+`git add public/images/raw public/images/resized public/captions.js`
 
 Report what was added: N new photos (dog-X through dog-Y), N captions written. Leave the commit to the user unless they ask you to commit.
 
@@ -71,17 +80,19 @@ Report what was added: N new photos (dog-X through dog-Y), N captions written. L
 
 Understanding these keeps you from breaking things:
 
-**Gallery** (`gallery.html`): Uses `captions.length` as the total plate count. Generates `images/dog-${n}.jpeg` for n = 1..total. Adding a photo without a caption means the gallery will try to load an image that doesn't exist at that index — always keep images and captions in sync.
+**Gallery** (`gallery.html`): Uses `captions.length` as the total plate count. Generates `images/resized/dog-${n}.jpeg` for n = 1..total. Adding a photo without a caption means the gallery will try to load an image that doesn't exist at that index — always keep images and captions in sync.
 
 **Homepage** (`index.html`): Picks today's photo via `(year*10000 + month*100 + day) % captions.length + 1`. Every time photos are added, the rotation shifts for all future dates. That's expected and fine.
 
 **Service worker** (`sw.js`): `captions.js` is in the app shell and served network-first. Images are cache-first (immutable). No action needed here.
 
-**Pre-commit hook** (`.githooks/pre-commit`): Runs `scripts/caption-new-images.js`, which calls the Claude API if `ANTHROPIC_API_KEY` is set. Since you're handling captions manually in this skill, the hook will report "captions: up to date" and pass cleanly without the key.
+**Pre-commit hook** (`.githooks/pre-commit`): Runs `scripts/resize-images.js` then `scripts/caption-new-images.js`, which calls the Claude API if `ANTHROPIC_API_KEY` is set. Since you're handling captions manually in this skill, the hook will report "captions: up to date" and pass cleanly without the key.
 
 ## Edge cases
 
+- If the user drops files into `public/images/` itself rather than `raw/`, move them into `raw/` first.
 - If the user drops files that are already named `dog-N.jpeg` correctly, skip renaming — just check they have captions.
+- Never edit anything in `public/images/resized/` by hand; it is derived output. Change the raw file and re-run the resize script.
 - If a photo already has a caption entry (e.g., the array was manually extended), skip it.
 - If an image number would create a gap (e.g., dog-103 exists but dog-104 doesn't and the user dropped dog-106), fill sequentially from the first gap — never skip numbers.
 - HEIC, PNG, or other formats: rename to `.jpeg` extension only if the file is actually JPEG-encoded; otherwise note to the user that the file needs conversion first. Most iPhone exports are already JPEG regardless of original extension.
