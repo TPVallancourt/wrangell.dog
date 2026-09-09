@@ -146,8 +146,13 @@ cache (`sw.js`), so neither is ever cached there.
 
 The account is on the Workers Paid plan (1M KV writes/month included), so this is no longer
 a hard ceiling — it was, back when the free tier's **1,000 KV writes a day** budget was shared
-with the wedding guestbook. The write-minimizing design stays, since it costs nothing and the
-habits are worth keeping:
+with the wedding guestbook. **The upgrade is temporary**: it was purchased on 2026-09-09 to
+cover the wedding traffic spike and is meant to be cancelled around **2026-10-09**, after
+which the account reverts to the free tier's daily caps. Cloudflare subscriptions auto-renew
+rather than expiring on their own, so cancelling requires manually turning it off in the
+dashboard (Manage Account → Billing) before that date — check whether that's happened yet if
+you're reading this after 2026-10-09. The write-minimizing design stays either way, since it
+costs nothing and the habits are worth keeping:
 
 - **One key, not two.** `plates` and a separate `count` key used to be written on every pet
   — two writes to record one fact, since the total is just the sum of the parts. `base`
