@@ -126,16 +126,57 @@ Bump `CACHE` in `sw.js` when changing cached assets so old caches are evicted on
 The gallery (`gallery.html`) is the interactive surface: clicking a plate opens a **lightbox**
 (full image, caption, prev/next, keyboard nav) that hosts both the pet button and comments.
 The Worker exposes two KV-backed JSON endpoints; `/api/*` is excluded from the service-worker
-cache (`sw.js`), so neither is ever cached.
+cache (`sw.js`), so neither is ever cached there.
 
 **`/api/pets`** — pet counts.
 - `GET` → `{ count, plates }` where `count` is the global total and `plates` is a
-  `{ "<plate>": <count> }` map.
-- `POST` with body `{ plate }` (integer 1–`MAX_PLATE`) → increments that plate and the total,
-  returns `{ count, plate, plateCount }`. A missing/invalid `plate` bumps only the total
-  (`{ count }`) for back-compat.
-- KV keys: `count` (string total) and `plates` (one JSON map). The gallery shows a per-plate
-  "🐾 N" badge, a "Most petted" sort, and a top-3 hall of fame.
+  `{ "<plate>": <count> }` map. One KV read, and edge-cached for `PETS_CACHE_TTL` (60s)
+  via the Cache API, keyed on a query-stripped URL. Many visitors read these counts and
+  few change them, so this collapses a traffic spike into one KV read per TTL per colo.
+  A POST purges the entry, which costs nothing in KV terms and keeps a reload after
+  petting honest.
+- `POST` with body `{ plate, n }` (`plate` an integer ≥ 1; `n` optional pet count, default
+  1, clamped to `MAX_PET_BATCH` = 50) → credits that plate and returns
+  `{ count, plate, plateCount }`. A missing/invalid `plate` credits only the unattributed
+  pool (`{ count }`) for back-compat. **One KV write**, whatever `n` is.
+- KV key: `plates` alone, holding `{ v: 2, base, plates: { "<plate>": n } }`. `count` is
+  derived as `base + sum(plates)`, never stored — see "Pet write budget" below.
+
+### Pet write budget
+
+The free tier allows **1,000 KV writes a day**, and the wedding guestbook spends from that
+same budget, so pets are deliberately cheap:
+
+- **One key, not two.** `plates` and a separate `count` key used to be written on every pet
+  — two writes to record one fact, since the total is just the sum of the parts. `base`
+  carries the pets never attributed to a plate (the legacy total minus the plate sum at
+  migration, plus anything a later plate-less POST adds).
+- **Migration is lazy** and happens on the first POST, not on GET: a GET that writes would
+  burn the budget it exists to protect. Until that first pet lands, a GET costs two reads
+  instead of one. The pre-v2 `count` key is left in place as a backup and is never written
+  again. Note this is a one-way door — reverting the Worker would make the old code read the
+  v2 wrapper keys (`v`, `base`, `plates`) as if they were plate numbers.
+- **Clients coalesce bursts.** All three pages increment the UI optimistically and send one
+  POST per burst — after `PET_IDLE` of quiet, at `PET_MAX` since the burst began, or at
+  `PET_BATCH` (50) taps, whichever lands first — then reconcile against the server's number
+  once nothing is queued behind the batch. `wedding.html` uses a longer `PET_IDLE` (3s vs
+  2s) because its `PET_GOAL` progress bar invites sustained tapping, and a longer window
+  packs more taps into each write. Pending taps flush on `pagehide`/`visibilitychange` via
+  `navigator.sendBeacon`, since a fetch started as the page goes away gets cancelled.
+- `PET_BATCH` in each page must stay in step with `MAX_PET_BATCH` in `src/index.js`, or taps
+  past the cap are silently dropped.
+- **The wedding page's goal bar stands down for the signing weekend.** A progress bar toward
+  `PET_GOAL` is an invitation to keep tapping, and the two days it would compete with are
+  exactly the two days signatures cannot be turned away. During `signingWeekend()` (the same
+  `GB_OPENS`/`GB_CLOSES` window the guestbook uses, hoisted into the Dates block of
+  `wedding.html` because two features now share it), `renderPets` hides `#ring-track` and
+  drops the "goal 1,000" suffix, leaving a plain pet count. The button keeps working and
+  still feeds the gallery hall of fame. The hourly re-check that flips the headline tense
+  also re-renders this, so a tab left open overnight retires the bar on its own.
+
+Comment reads are cached per plate for the session in each page (`commentCache`, and
+`entries` for the guestbook), and post/delete splice that copy rather than re-reading the
+list. Holding an arrow key in the lightbox used to cost one KV read per plate stepped over.
 
 **`/api/comments`** — per-plate visitor notes.
 - `GET ?plate=N` → `{ comments: [{ id, name, text, ts }] }` (oldest first).

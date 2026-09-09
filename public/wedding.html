@@ -608,7 +608,7 @@
         <div class="ring">
           <button class="ring-btn" id="ring-btn" type="button">&#128062;&nbsp;Pet the ring bearer</button>
           <div class="ring-meter">
-            <div class="ring-track"><span class="ring-fill" id="ring-fill"></span></div>
+            <div class="ring-track" id="ring-track"><span class="ring-fill" id="ring-fill"></span></div>
             <p class="ring-label" id="ring-label">Loading…</p>
           </div>
         </div>
@@ -686,6 +686,16 @@
       const AFTER       = Date.parse('2026-09-20T00:00:00-04:00'); // tense flips at midnight
       const DAY_MS = 86400000;
 
+      // Guestbook signing is open for the wedding weekend only. Mirrors the window the
+      // Worker enforces in src/index.js — keep the two in sync. Reading is always open.
+      // The pet goal bar keys off this same window too; see renderPets.
+      const GB_OPENS = Date.parse('2026-09-19T00:00:00-04:00');
+      const GB_CLOSES = Date.parse('2026-09-21T00:00:00-04:00');
+
+      function signingWeekend(now) {
+        return now >= GB_OPENS && now < GB_CLOSES;
+      }
+
       const RING_PLATE = 161;    // the beach tuxedo — the hero, and what "pet" increments
       const GUEST_PLATE = 919;   // reserved plate for the wedding guestbook (9/19)
       const PET_GOAL = 1000;
@@ -715,19 +725,27 @@
       }
 
       renderTense();
-      // Re-check on the hour so a page left open overnight flips tense on its own.
-      setInterval(renderTense, 60 * 60 * 1000);
 
       // ---------- Pet the ring bearer ----------
       const ringBtn = document.getElementById('ring-btn');
+      const ringTrack = document.getElementById('ring-track');
       const ringFill = document.getElementById('ring-fill');
       const ringLabel = document.getElementById('ring-label');
       const ringRow = ringBtn.parentElement;
 
+      // The goal bar stands down for the signing weekend. A progress bar is an invitation
+      // to keep tapping, and every burst of taps is a KV write from the same 1,000/day
+      // budget the guestbook spends from — a signature turned away costs far more than a
+      // hidden number. The button still works and still feeds the gallery hall of fame;
+      // only the bar and the "goal 1,000" target go away, and only for those two days.
       function renderPets(n) {
         const count = n || 0;
-        ringLabel.textContent = `${count.toLocaleString('en-US')} pets · goal ${PET_GOAL.toLocaleString('en-US')}`;
-        ringFill.style.width = Math.min(100, (count / PET_GOAL) * 100) + '%';
+        const showGoal = !signingWeekend(Date.now());
+        ringTrack.hidden = !showGoal;
+        ringLabel.textContent = showGoal
+          ? `${count.toLocaleString('en-US')} pets · goal ${PET_GOAL.toLocaleString('en-US')}`
+          : `${count.toLocaleString('en-US')} pets`;
+        ringFill.style.width = showGoal ? Math.min(100, (count / PET_GOAL) * 100) + '%' : '0';
       }
 
       function bump() {
@@ -747,31 +765,96 @@
         setTimeout(() => el.remove(), 900);
       }
 
+      let petCount = 0;
+
       (async () => {
         try {
           const r = await fetch('/api/pets');
           if (!r.ok) throw new Error('pets');
           const { plates } = await r.json();
-          renderPets((plates || {})[RING_PLATE]);
+          petCount = (plates || {})[RING_PLATE] || 0;
+          renderPets(petCount);
         } catch {
           ringLabel.textContent = '';
         }
       })();
 
-      ringBtn.addEventListener('click', async () => {
-        const rect = ringBtn.getBoundingClientRect();
-        spawnFloat(rect.left + rect.width / 2, rect.top - 8);
+      // A pet used to be one KV write each, and PET_GOAL invites a thousand of them —
+      // against a free-tier budget of 1,000 writes a day that the guestbook spends from
+      // too. Taps now move the bar immediately and are coalesced into one POST per
+      // burst. This page waits longer than the others before flushing because a progress
+      // bar invites sustained tapping, and a longer window packs more taps per write.
+      const PET_IDLE = 3000;
+      const PET_MAX = 15000;
+      const PET_BATCH = 50;   // keep in step with MAX_PET_BATCH in src/index.js
+
+      let pending = 0;
+      let idleTimer = null;
+      let capTimer = null;
+
+      function takeBatch() {
+        clearTimeout(idleTimer); idleTimer = null;
+        clearTimeout(capTimer); capTimer = null;
+        const n = pending;
+        pending = 0;
+        return { plate: RING_PLATE, n };
+      }
+
+      async function flushPets() {
+        if (!pending) return;
+        const batch = takeBatch();
         try {
           const r = await fetch('/api/pets', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ plate: RING_PLATE }),
+            body: JSON.stringify(batch),
           });
           if (!r.ok) return;
           const data = await r.json();
-          if (typeof data.plateCount === 'number') { renderPets(data.plateCount); bump(); }
+          // Trust the server's number only once nothing is queued behind this batch,
+          // or a tap mid-flight would snap the bar backwards.
+          if (!pending && typeof data.plateCount === 'number') {
+            petCount = data.plateCount;
+            renderPets(petCount);
+          }
         } catch {}
+      }
+
+      // A fetch started on pagehide gets cancelled; a beacon outlives the page. Guests
+      // tap and close the tab, so without this the last burst would never be recorded.
+      function flushPetsOnExit() {
+        if (!pending) return;
+        const batch = takeBatch();
+        try {
+          navigator.sendBeacon('/api/pets',
+            new Blob([JSON.stringify(batch)], { type: 'application/json' }));
+        } catch {}
+      }
+
+      addEventListener('pagehide', flushPetsOnExit);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') flushPetsOnExit();
       });
+
+      ringBtn.addEventListener('click', () => {
+        const rect = ringBtn.getBoundingClientRect();
+        spawnFloat(rect.left + rect.width / 2, rect.top - 8);
+        petCount += 1;             // optimistic; reconciled when the batch flushes
+        renderPets(petCount);
+        bump();
+        pending += 1;
+        if (pending >= PET_BATCH) { flushPets(); return; }
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(flushPets, PET_IDLE);
+        if (!capTimer) capTimer = setTimeout(flushPets, PET_MAX);
+      });
+
+      // Re-check on the hour so a page left open overnight flips tense on its own, and
+      // so the goal bar stands down when the signing weekend starts under an open tab.
+      setInterval(() => {
+        renderTense();
+        renderPets(petCount);
+      }, 60 * 60 * 1000);
 
       // ---------- Guestbook (same /api/comments endpoint, on a reserved plate) ----------
       let adminToken = '';
@@ -793,18 +876,14 @@
       const gbChip = document.getElementById('gb-chip');
       const gbIntro = document.getElementById('gb-intro');
 
-      // Signing is open for the wedding weekend only. Mirrors the window the Worker
-      // enforces in src/index.js — keep the two in sync. Reading is always open.
-      const GB_OPENS = Date.parse('2026-09-19T00:00:00-04:00');
-      const GB_CLOSES = Date.parse('2026-09-21T00:00:00-04:00');
-
       let canSignNow = false;
 
       function renderGuestbookState() {
         const now = Date.now();
         // Admins can sign any time, matching the Worker — that is how the form gets
-        // tested outside the weekend.
-        const canSign = (now >= GB_OPENS && now < GB_CLOSES) || Boolean(adminToken);
+        // tested outside the weekend. GB_OPENS/GB_CLOSES live up in the Dates block,
+        // because the pet goal bar keys off the same window.
+        const canSign = signingWeekend(now) || Boolean(adminToken);
         canSignNow = canSign;
         gbForm.hidden = !canSign;
         gbClosed.hidden = canSign;
@@ -891,14 +970,20 @@
         list.forEach((c) => gbList.appendChild(entryEl(c)));
       }
 
+      // The book is read once and then kept current in place: signing or deleting
+      // splices the local copy instead of re-reading all of it back out of KV.
+      let entries = null;
+
       async function load() {
         gbList.innerHTML = '<p class="gb-empty">Loading…</p>';
         try {
           const r = await fetch(`/api/comments?plate=${GUEST_PLATE}`);
           if (!r.ok) throw new Error('load failed');
           const { comments } = await r.json();
-          render(comments || []);
+          entries = comments || [];
+          render(entries);
         } catch {
+          entries = null;
           gbList.innerHTML = '<p class="gb-empty">Could not load the guestbook.</p>';
         }
       }
@@ -911,7 +996,13 @@
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
             body: JSON.stringify({ plate: GUEST_PLATE, id }),
           });
-          if (r.ok) load();
+          if (!r.ok) return;
+          if (entries) {
+            entries = entries.filter((c) => c.id !== id);
+            render(entries);
+          } else {
+            load();
+          }
         } catch {}
       }
 
@@ -940,7 +1031,14 @@
             const n = gbName.value.trim();
             if (n) localStorage.setItem('wrangell-name', n); else localStorage.removeItem('wrangell-name');
           } catch {}
-          load();
+          // Append the new signature rather than re-reading the whole book.
+          const { comment } = await r.json();
+          if (comment && entries) {
+            entries.push(comment);
+            render(entries);
+          } else {
+            load();
+          }
         } catch {
           gbError.textContent = 'Network error.';
         } finally {

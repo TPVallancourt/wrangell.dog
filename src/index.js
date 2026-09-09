@@ -1,5 +1,17 @@
-const KEY = 'count';          // global running total (all plates)
-const PLATES_KEY = 'plates';   // JSON map of { "<plate>": <count> }
+// Pet counts live in ONE key. They used to live in two — `plates` for the per-plate map
+// and `count` for the global total — which meant every pet cost two KV writes to record
+// one fact, since the total is just the sum of the parts. The free tier allows 1,000
+// writes a day and the wedding guestbook spends from that same budget, so the total is
+// now derived on read and `count` is kept only as a pre-migration backup.
+//
+// `plates` holds { v: 2, base, plates: { "<plate>": n } }. `base` carries the pets that
+// were never attributed to a plate: the legacy total minus the plate sum at migration
+// time, plus anything a plate-less POST adds later. See readPetState for the migration.
+const PLATES_KEY = 'plates';
+const LEGACY_COUNT_KEY = 'count'; // pre-v2 global total; read once, then only for history
+const MAX_PET_BATCH = 50;      // pets a single POST may carry; clients coalesce bursts
+const PETS_CACHE_TTL = 60;     // seconds a GET /api/pets response may be reused
+
 const COMMENTS_PREFIX = 'comments:'; // comments:<plate> → JSON array of comments
 const MAX_COMMENTS = 200;      // per-plate comment cap; oldest are dropped past this
 const MAX_TEXT = 500;          // comment body length cap
@@ -65,12 +77,47 @@ function clean(value, max) {
   return out.trim().slice(0, max);
 }
 
-async function readPlates(env) {
+// Pets a single POST may credit at once. Absent/garbage means one pet.
+function toBatch(value) {
+  if (value == null) return 1;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 1) return 1;
+  return Math.min(n, MAX_PET_BATCH);
+}
+
+function sumPlates(plates) {
+  let total = 0;
+  for (const v of Object.values(plates)) total += Number(v) || 0;
+  return total;
+}
+
+// Returns { base, plates }. Costs one KV read once migrated, two before then.
+async function readPetState(env) {
+  let raw = null;
   try {
-    return JSON.parse((await env.PETS.get(PLATES_KEY)) || '{}') || {};
+    raw = JSON.parse((await env.PETS.get(PLATES_KEY)) || 'null');
   } catch {
-    return {};
+    raw = null;
   }
+
+  if (raw && raw.v === 2) {
+    return { base: Number(raw.base) || 0, plates: raw.plates || {} };
+  }
+
+  // Pre-v2: `plates` was a bare map and `count` held the total. The total could exceed
+  // the plate sum because plate-less POSTs bumped only `count`, so the difference is
+  // what `base` preserves. Migration is lazy and happens on the first write, not here —
+  // a GET that writes would burn the write budget it is meant to protect.
+  const plates = raw && typeof raw === 'object' ? raw : {};
+  const legacyTotal = parseInt((await env.PETS.get(LEGACY_COUNT_KEY)) || '0', 10) || 0;
+  return { base: Math.max(0, legacyTotal - sumPlates(plates)), plates };
+}
+
+function writePetState(env, state) {
+  return env.PETS.put(
+    PLATES_KEY,
+    JSON.stringify({ v: 2, base: state.base, plates: state.plates }),
+  );
 }
 
 async function readComments(env, plate) {
@@ -95,27 +142,54 @@ function adminAuthorized(request, env) {
   return Boolean(env.ADMIN_TOKEN) && token === env.ADMIN_TOKEN;
 }
 
-async function handlePets(request, env) {
+// Normalized so a stray query string still hits the one cached entry, and so POST can
+// address the same entry the GET stored.
+function petsCacheKey(request) {
+  const url = new URL(request.url);
+  url.search = '';
+  return new Request(url.toString(), { method: 'GET' });
+}
+
+async function handlePets(request, env, ctx) {
+  const cache = caches.default;
+
   if (request.method === 'GET') {
-    const count = parseInt((await env.PETS.get(KEY)) || '0', 10);
-    const plates = await readPlates(env);
-    return Response.json({ count, plates });
+    // Many visitors read these counts and few change them, so caching collapses a
+    // traffic spike into one KV read per TTL per colo. Purging on write (below) is
+    // free in KV terms, which keeps a reload after petting honest.
+    const key = petsCacheKey(request);
+    const hit = await cache.match(key);
+    if (hit) return hit;
+
+    const { base, plates } = await readPetState(env);
+    const response = Response.json(
+      { count: base + sumPlates(plates), plates },
+      { headers: { 'Cache-Control': `public, max-age=${PETS_CACHE_TTL}` } },
+    );
+    ctx.waitUntil(cache.put(key, response.clone()));
+    return response;
   }
+
   if (request.method === 'POST') {
     const body = await safeJson(request);
     const plate = toPlate(body.plate);
-    const next = parseInt((await env.PETS.get(KEY)) || '0', 10) + 1;
-    await env.PETS.put(KEY, String(next));
+    const n = toBatch(body.n);
+    const state = await readPetState(env);
 
-    // No valid plate (legacy/defensive) → bump only the global total.
-    if (plate === null) return Response.json({ count: next });
+    // No valid plate (legacy/defensive) → credit the unattributed pool only.
+    if (plate === null) {
+      state.base += n;
+    } else {
+      state.plates[plate] = (state.plates[plate] || 0) + n;
+    }
+    await writePetState(env, state);
+    ctx.waitUntil(cache.delete(petsCacheKey(request)));
 
-    const plates = await readPlates(env);
-    const plateCount = (plates[plate] || 0) + 1;
-    plates[plate] = plateCount;
-    await env.PETS.put(PLATES_KEY, JSON.stringify(plates));
-    return Response.json({ count: next, plate, plateCount });
+    const count = state.base + sumPlates(state.plates);
+    if (plate === null) return Response.json({ count });
+    return Response.json({ count, plate, plateCount: state.plates[plate] });
   }
+
   return new Response('Method not allowed', { status: 405 });
 }
 
@@ -190,10 +264,10 @@ async function handleComments(request, env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    if (url.pathname === '/api/pets') return handlePets(request, env);
+    if (url.pathname === '/api/pets') return handlePets(request, env, ctx);
     if (url.pathname === '/api/comments') return handleComments(request, env);
 
     // "/?wedding=1" previews the takeover before it goes live; "/?daily=1" opts out of it

@@ -9,7 +9,7 @@
 // .html form (/gallery.html → /gallery). We precache the clean URLs because Cache.put()
 // rejects redirected responses, and normalize trailing ".html" on offline navigations.
 
-const CACHE = 'wrangell-v2';
+const CACHE = 'wrangell-v3';
 
 const APP_SHELL = [
   '/',
