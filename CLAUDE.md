@@ -144,8 +144,14 @@ cache (`sw.js`), so neither is ever cached there.
 
 ### Pet write budget
 
-The free tier allows **1,000 KV writes a day**, and the wedding guestbook spends from that
-same budget, so pets are deliberately cheap:
+The account is on the Workers Paid plan (1M KV writes/month included), so this is no longer
+a hard ceiling — it was, back when the free tier's **1,000 KV writes a day** budget was shared
+with the wedding guestbook. **The upgrade is temporary**: it was purchased on 2026-09-09 to
+cover the wedding traffic spike, and cancellation for **2026-10-09** has already been
+requested with Cloudflare, after which the account reverts to the free tier's daily caps —
+if you're reading this after that date, confirm the cancellation actually took effect rather
+than assuming it did. The write-minimizing design stays either way, since it
+costs nothing and the habits are worth keeping:
 
 - **One key, not two.** `plates` and a separate `count` key used to be written on every pet
   — two writes to record one fact, since the total is just the sum of the parts. `base`
@@ -165,14 +171,6 @@ same budget, so pets are deliberately cheap:
   `navigator.sendBeacon`, since a fetch started as the page goes away gets cancelled.
 - `PET_BATCH` in each page must stay in step with `MAX_PET_BATCH` in `src/index.js`, or taps
   past the cap are silently dropped.
-- **The wedding page's goal bar stands down for the signing weekend.** A progress bar toward
-  `PET_GOAL` is an invitation to keep tapping, and the two days it would compete with are
-  exactly the two days signatures cannot be turned away. During `signingWeekend()` (the same
-  `GB_OPENS`/`GB_CLOSES` window the guestbook uses, hoisted into the Dates block of
-  `wedding.html` because two features now share it), `renderPets` hides `#ring-track` and
-  drops the "goal 1,000" suffix, leaving a plain pet count. The button keeps working and
-  still feeds the gallery hall of fame. The hourly re-check that flips the headline tense
-  also re-renders this, so a tab left open overnight retires the bar on its own.
 
 Comment reads are cached per plate for the session in each page (`commentCache`, and
 `entries` for the guestbook), and post/delete splice that copy rather than re-reading the
