@@ -1035,25 +1035,89 @@
         setTimeout(() => el.remove(), 900);
       }
 
-      async function sendPet(plate) {
-        const r = await fetch('/api/pets', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plate }),
+      // Each pet used to be its own KV write, so a burst of taps spent one write apiece
+      // out of a 1,000/day budget the wedding guestbook draws on too. Taps now update
+      // the UI immediately and are coalesced into a single POST: PET_IDLE of quiet after
+      // the last tap, PET_MAX since the burst began, or PET_BATCH taps — first to land.
+      const PET_IDLE = 2000;
+      const PET_MAX = 10000;
+      const PET_BATCH = 50;   // keep in step with MAX_PET_BATCH in src/index.js
+
+      let totalCount = 0;
+
+      function makePetQueue(onSettled) {
+        let pending = 0;
+        let plate = null;
+        let idle = null;
+        let cap = null;
+
+        function take() {
+          clearTimeout(idle); idle = null;
+          clearTimeout(cap); cap = null;
+          const batch = { plate, n: pending };
+          pending = 0;
+          plate = null;
+          return batch;
+        }
+
+        async function flush() {
+          if (!pending) return;
+          const batch = take();
+          try {
+            const r = await fetch('/api/pets', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(batch),
+            });
+            if (!r.ok) return;
+            const data = await r.json();
+            // Trust the server's numbers only once nothing is queued behind this batch,
+            // or a tap mid-flight would snap the display backwards.
+            if (!pending && onSettled) onSettled(batch.plate, data);
+          } catch {}
+        }
+
+        // A fetch started on pagehide gets cancelled; a beacon outlives the page.
+        function flushOnExit() {
+          if (!pending) return;
+          const batch = take();
+          try {
+            navigator.sendBeacon('/api/pets',
+              new Blob([JSON.stringify(batch)], { type: 'application/json' }));
+          } catch {}
+        }
+
+        addEventListener('pagehide', flushOnExit);
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden') flushOnExit();
         });
-        if (!r.ok) throw new Error('pet failed');
-        const data = await r.json();
-        setCount(data.count);
-        bump();
-        return data;
+
+        return function add(n) {
+          if (plate !== null && n !== plate) flush(); // never credit taps to a new plate
+          plate = n;
+          pending += 1;
+          if (pending >= PET_BATCH) { flush(); return; }
+          clearTimeout(idle);
+          idle = setTimeout(flush, PET_IDLE);
+          if (!cap) cap = setTimeout(flush, PET_MAX);
+        };
       }
+
+      const queuePet = makePetQueue((plate, data) => {
+        if (typeof data.count === 'number') { totalCount = data.count; setCount(totalCount); }
+        if (typeof data.plateCount !== 'number') return;
+        plateCounts[plate] = data.plateCount;
+        if (lbN === plate) lbPetCount.textContent = fmtPets(data.plateCount);
+        updatePlateBadge(plate);
+      });
 
       async function loadCount() {
         try {
           const r = await fetch('/api/pets');
           if (!r.ok) return;
           const { count, plates } = await r.json();
-          setCount(count);
+          totalCount = count || 0;
+          setCount(totalCount);
           plateCounts = plates || {};
           refreshBadges();
         } catch {}
@@ -1143,18 +1207,18 @@
       document.getElementById('lb-next').addEventListener('click', () => step(1));
       lb.addEventListener('click', (e) => { if (e.target === lb) closeLightbox(); });
 
-      lbPet.addEventListener('click', async () => {
+      lbPet.addEventListener('click', () => {
         const n = lbN;
         const rect = lbActions.getBoundingClientRect();
         spawnFloat(lbActions, rect.left + rect.width / 2, rect.top - 8);
-        try {
-          const data = await sendPet(n);
-          if (data && typeof data.plateCount === 'number') {
-            plateCounts[n] = data.plateCount;
-            if (lbN === n) lbPetCount.textContent = fmtPets(data.plateCount);
-            updatePlateBadge(n);
-          }
-        } catch {}
+        // Optimistic; both numbers are reconciled when the batch flushes.
+        plateCounts[n] = (plateCounts[n] || 0) + 1;
+        totalCount += 1;
+        setCount(totalCount);
+        bump();
+        if (lbN === n) lbPetCount.textContent = fmtPets(plateCounts[n]);
+        updatePlateBadge(n);
+        queuePet(n);
       });
 
       // ---------- Comments ----------
@@ -1212,12 +1276,23 @@
         list.forEach((c) => commentsList.appendChild(commentEl(c)));
       }
 
-      async function loadComments(n) {
+      // One KV read per plate per session. Holding an arrow key walks the whole gallery,
+      // and every step used to be a fresh read of that plate's comments — so stepping
+      // back and forth through 161 plates cost a read apiece. Cache instead, and keep it
+      // current on post/delete rather than refetching.
+      const commentCache = new Map();
+
+      async function loadComments(n, { refresh = false } = {}) {
+        if (!refresh && commentCache.has(n)) {
+          renderComments(commentCache.get(n));
+          return;
+        }
         commentsList.innerHTML = '<p class="lb-empty">Loading…</p>';
         try {
           const r = await fetch(`/api/comments?plate=${n}`);
           if (!r.ok) throw new Error('load failed');
           const { comments } = await r.json();
+          commentCache.set(n, comments || []);
           if (lbN !== n) return; // navigated away while loading
           renderComments(comments || []);
         } catch {
@@ -1227,13 +1302,17 @@
 
       async function deleteComment(id) {
         if (!adminToken) return;
+        const plate = lbN;
         try {
           const r = await fetch('/api/comments', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-            body: JSON.stringify({ plate: lbN, id }),
+            body: JSON.stringify({ plate, id }),
           });
-          if (r.ok) loadComments(lbN);
+          if (!r.ok) return;
+          const list = (commentCache.get(plate) || []).filter((c) => c.id !== id);
+          commentCache.set(plate, list);
+          if (lbN === plate) renderComments(list);
         } catch {}
       }
 
@@ -1257,7 +1336,14 @@
             const n = cfName.value.trim();
             if (n) localStorage.setItem('wrangell-name', n); else localStorage.removeItem('wrangell-name');
           } catch {}
-          if (lbN === plate) loadComments(plate);
+          // Splice the new comment in rather than re-reading the whole list.
+          const { comment } = await r.json();
+          if (comment && commentCache.has(plate)) {
+            commentCache.get(plate).push(comment);
+            if (lbN === plate) renderComments(commentCache.get(plate));
+          } else if (lbN === plate) {
+            loadComments(plate, { refresh: true });
+          }
         } catch {
           cfError.textContent = 'Network error.';
         } finally {
