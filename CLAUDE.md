@@ -165,6 +165,14 @@ same budget, so pets are deliberately cheap:
   `navigator.sendBeacon`, since a fetch started as the page goes away gets cancelled.
 - `PET_BATCH` in each page must stay in step with `MAX_PET_BATCH` in `src/index.js`, or taps
   past the cap are silently dropped.
+- **The wedding page's goal bar stands down for the signing weekend.** A progress bar toward
+  `PET_GOAL` is an invitation to keep tapping, and the two days it would compete with are
+  exactly the two days signatures cannot be turned away. During `signingWeekend()` (the same
+  `GB_OPENS`/`GB_CLOSES` window the guestbook uses, hoisted into the Dates block of
+  `wedding.html` because two features now share it), `renderPets` hides `#ring-track` and
+  drops the "goal 1,000" suffix, leaving a plain pet count. The button keeps working and
+  still feeds the gallery hall of fame. The hourly re-check that flips the headline tense
+  also re-renders this, so a tab left open overnight retires the bar on its own.
 
 Comment reads are cached per plate for the session in each page (`commentCache`, and
 `entries` for the guestbook), and post/delete splice that copy rather than re-reading the
